@@ -2,7 +2,7 @@
 
 Code samples for a directed studies course on computational modelling (UBC PSYC 547E)
 
-Python was used to implement the following:
+This work was done primarily for learning purposes. The following have been implemented:
 
 * Linear regression
 * Logistic regression
@@ -17,10 +17,10 @@ Python was used to implement the following:
 * Python 2.7.x
  * Install: https://www.python.org/downloads/
     * This is should already be installed on Mac OSX
-* numpy
+* [numpy](http://www.numpy.org/)
   * Install: `pip install numpy`
   * Used to handle arrays and matrices in Python
-* matplotlib
+* [matplotlib](http://matplotlib.org/)
   * Install: `pip install matplotlib`
   * Used for plotting
 

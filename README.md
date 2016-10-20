@@ -31,4 +31,4 @@ The quickest/easiest way to get up and running is by installing the [Anaconda Py
 ## To Do
 
 * Refactor code into classes for modularity
-* (Better) Integration of [Theano](http://deeplearning.net/software/theano/) so we can...
+* (Better) Integration of [Theano](http://deeplearning.net/software/theano/)

@@ -18,9 +18,12 @@ training_iterations = 30000
 x = T.matrix("x")
 y = T.vector("y")
 
+# Set random seed
+rng = np.random.RandomState(2345)
+
 # Initialize random weights
 w_values = np.asarray(
-    np.random.uniform(low=-1, high=1, size=(2, 1)),
+    rng.uniform(low=-1, high=1, size=(2, 1)),
     dtype=theano.config.floatX)  # Force type to 32bit float for GPU
 w = theano.shared(value=w_values, name='w', borrow=True)
 

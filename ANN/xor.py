@@ -20,21 +20,26 @@ y = T.vector("y")
 b1 = theano.shared(value=1.0, name='b1')
 b2 = theano.shared(value=1.0, name='b2')
 
+# Set random seed
+rng = np.random.RandomState(2345)
+
 # Initialize weights
 w1_array = np.asarray(
-    np.random.uniform(low=-1, high=1, size=(2, hidden_layer_nodes)),
+    rng.uniform(low=-1, high=1, size=(2, hidden_layer_nodes)),
     dtype=theano.config.floatX)  # Force type to 32bit float for GPU
 w1 = theano.shared(value=w1_array, name='w1', borrow=True)
 
 w2_array = np.asarray(
-    np.random.uniform(low=-1, high=1, size=(hidden_layer_nodes, 1)),
+    rng.uniform(low=-1, high=1, size=(hidden_layer_nodes, 1)),
     dtype=theano.config.floatX)  # Force type to 32bit float for GPU
 w2 = theano.shared(value=w2_array, name='w2', borrow=True)
 
 # Theano symbolic expressions
-a1 = T.nnet.sigmoid(T.dot(x, w1) + b1)
-a2 = T.nnet.sigmoid(T.dot(a1, w2) + b2)
-hypothesis = T.flatten(a2)
+a1 = T.nnet.sigmoid(T.dot(x, w1) + b1)  # Input -> Hidden
+a2 = T.nnet.sigmoid(T.dot(a1, w2) + b2)  # Hidden -> Output
+hypothesis = T.flatten(a2)  # This needs to be flattened so
+                            # hypothesis (matrix) and
+                            # y (vector) have the same shape
 
 # cost = T.sum((y - hypothesis) ** 2)  # Quadratic/squared error loss
 # cost = -(y*T.log(hypothesis) + (1-y)*T.log(1-hypothesis)).sum()  # Manual CE

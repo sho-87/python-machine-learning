@@ -90,8 +90,8 @@ accuracy_history = []
 
 for sd in sd_list:
     # Add random noise to the input data (sampled from normal distribution)
-    spread = np.random.normal(0, sd, (len(raw_input), 2)).astype('float32')
-    pred_data = np.add(raw_input, spread)
+    noise = np.random.normal(0, sd, (len(raw_input), 2)).astype('float32')
+    pred_data = np.add(raw_input, noise)
     
     predictions = predict(pred_data)[0]
     predictions[predictions >= 0.5] = 1
@@ -111,7 +111,7 @@ plt.grid(True)
 plt.xlim(min(sd_list), max(sd_list))
 plt.ylim(0, max(accuracy_history)+10)
 plt.title("Test Set Accuracy")
-plt.xlabel("Noise (Standard Deviations)")
+plt.xlabel("Noise (Standard Deviation)")
 plt.ylabel("Classification Accuracy (%)")
 
 # Narrow range (higher resolution of the 0-0.5 SD range)
@@ -120,8 +120,8 @@ accuracy_history = []
 
 for sd in sd_list:
     # Add random noise to the input data (sampled from normal distribution)
-    spread = np.random.normal(0, sd, (len(raw_input), 2)).astype('float32')
-    pred_data = np.add(raw_input, spread)
+    noise = np.random.normal(0, sd, (len(raw_input), 2)).astype('float32')
+    pred_data = np.add(raw_input, noise)
     
     predictions = predict(pred_data)[0]
     predictions[predictions >= 0.5] = 1
@@ -141,5 +141,5 @@ plt.grid(True)
 plt.xlim(min(sd_list), max(sd_list))
 plt.ylim(0, max(accuracy_history)+10)
 plt.title("Test Set Accuracy")
-plt.xlabel("Noise (Standard Deviations)")
+plt.xlabel("Noise (Standard Deviation)")
 plt.ylabel("Classification Accuracy (%)")

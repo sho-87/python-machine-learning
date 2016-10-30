@@ -62,7 +62,7 @@ for i in range(training_iterations):
 plt.plot(range(1, len(cost_history)+1), cost_history)
 plt.grid(True)
 plt.xlim(1, len(cost_history))
-plt.ylim(0, max(cost_history))
+plt.ylim(0, max(cost_history)+0.1)
 plt.title("Training Curve")
 plt.xlabel("Iteration #")
 plt.ylabel("Cost")

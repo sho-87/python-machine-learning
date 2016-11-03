@@ -8,6 +8,8 @@ from struct import unpack
 def load_mnist(imagefile, labelfile):
     """Read input-vector (image) and target class (label, 0-9) and return
        it as list of tuples.
+       
+       Loads directly from the original MNIST data. Currently unused.
     """
     # Open the images with gzip in read binary mode
     images = gzip.open(imagefile, 'rb')
@@ -58,7 +60,10 @@ def load_mnist(imagefile, labelfile):
     return (x, y)
     
 def save_mnist():
-    """Save loaded MNIST data to disk"""
+    """Save loaded MNIST data to disk
+    
+       Loads directly from the original MNIST data. Currently unused.
+    """
     
     parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
     data_dir = os.path.join(parent_dir, 'data')

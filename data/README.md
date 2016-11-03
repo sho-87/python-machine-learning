@@ -8,5 +8,5 @@ Datasets used throughout the various examples
   * From http://www.umass.edu/statdata/statdata/stat-logistic.html
 * MNIST (handwritten digits)
   * Training and test datasets
-  * Numpy arrays generated from original MNIST data
+  * From https://github.com/mnielsen/neural-networks-and-deep-learning
   * Original data can be downloaded from Yann LeCun's [website](http://yann.lecun.com/exdb/mnist/index.html)

@@ -1,5 +1,6 @@
 # Data files
-/data/mnist_*
+/data/mnist_*.csv
+/data/*.gz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

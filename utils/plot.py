@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 
-
 def plot_training(history):
     """Plot the training curve.
     

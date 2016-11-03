@@ -5,9 +5,10 @@ Code samples for a directed studies course on computational modelling (UBC PSYC 
 This work was done primarily for learning purposes. The following have been implemented:
 
 * Linear regression (using base Python)
-* Logistic Regression (for learning an AND gate)
-* Logistic Regression (for learning an OR gate)
-* ANN (for learning an XOR gate)
+* Logistic Regression (AND gate)
+* Logistic Regression (OR gate)
+* ANN (XOR gate)
+* CNN (hand written digits)
 
 **Note**: the code has only been tested on Windows 10 with Python 2.7.12 (64 bit)
 

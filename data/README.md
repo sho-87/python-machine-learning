@@ -8,4 +8,5 @@ Datasets used throughout the various examples
   * From http://www.umass.edu/statdata/statdata/stat-logistic.html
 * MNIST (handwritten digits)
   * Training and test datasets
-  * Not included in this repo, but free to download from [Kaggle](https://www.kaggle.com/)
+  * Numpy arrays generated from original MNIST data
+  * Original data can be downloaded from Yann LeCun's [website](http://yann.lecun.com/exdb/mnist/index.html)

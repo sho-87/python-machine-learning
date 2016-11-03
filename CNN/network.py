@@ -31,6 +31,7 @@ from Chris Olah (http://colah.github.io ).
 # Standard library
 import cPickle
 import gzip
+import time
 
 # Third-party libraries
 import numpy as np
@@ -158,6 +159,8 @@ class Network(object):
         accuracy_history = {"validation": {"epoch": [], "score":[]},
                             "test": {"epoch": [], "score":[]}}
                             
+        start_time = time.time()
+                            
         for epoch in xrange(epochs):
             for minibatch_index in xrange(num_training_batches):
                 iteration = num_training_batches * epoch + minibatch_index
@@ -165,7 +168,8 @@ class Network(object):
                 cost_ij = train_mb(minibatch_index)
                 
                 if iteration % 1000 == 0:
-                    print("Training mini-batch #{} | Cost: {}".format(iteration, cost_ij))
+                    print("Training mini-batch {0}/{1} | Cost: {2:.4f} | Elapsed time: {3:.2f}s".format(
+                        iteration, num_training_batches * epochs, float(cost_ij), time.time() - start_time))
                     cost_history["iteration"].append(iteration)
                     cost_history["cost"].append(cost_ij)
 

@@ -1,32 +1,3 @@
-"""network3.py
-~~~~~~~~~~~~~~
-
-A Theano-based program for training and running simple neural
-networks.
-
-Supports several layer types (fully connected, convolutional, max
-pooling, softmax), and activation functions (sigmoid, tanh, and
-rectified linear units, with more easily added).
-
-When run on a CPU, this program is much faster than network.py and
-network2.py.  However, unlike network.py and network2.py it can also
-be run on a GPU, which makes it faster still.
-
-Because the code is based on Theano, the code is different in many
-ways from network.py and network2.py.  However, where possible I have
-tried to maintain consistency with the earlier programs.  In
-particular, the API is similar to network2.py.  Note that I have
-focused on making the code simple, easily readable, and easily
-modifiable.  It is not optimized, and omits many desirable features.
-
-This program incorporates ideas from the Theano documentation on
-convolutional neural nets (notably,
-http://deeplearning.net/tutorial/lenet.html ), from Misha Denil's
-implementation of dropout (https://github.com/mdenil/dropout ), and
-from Chris Olah (http://colah.github.io ).
-
-"""
-
 #### Libraries
 # Standard library
 import cPickle
@@ -50,8 +21,7 @@ def ReLU(z): return T.maximum(0.0, z)
 from theano.tensor.nnet import sigmoid
 from theano.tensor import tanh
 
-
-#### Constants
+# Constants
 GPU = True
 if GPU:
     try: theano.config.device = 'gpu'
@@ -60,24 +30,27 @@ if GPU:
 else:
     print "Running with a CPU."
 
-#### Load the MNIST data
-def load_data_shared(filename="../data/mnist.pkl.gz"):
+# Load the MNIST data
+def load_mnist_shared(filename="../data/mnist.pkl.gz"):
+    """Load MNIST data from file"""
     f = gzip.open(filename, 'rb')
     training_data, validation_data, test_data = cPickle.load(f)
     f.close()
+    
     def shared(data):
-        """Place the data into shared variables.  This allows Theano to copy
-        the data to the GPU, if one is available.
-
+        """Place the data into shared variables.
+        
+        This allows Theano to copy the data to the GPU, if one is available.
         """
         shared_x = theano.shared(
             np.asarray(data[0], dtype=theano.config.floatX), borrow=True)
         shared_y = theano.shared(
             np.asarray(data[1], dtype=theano.config.floatX), borrow=True)
         return shared_x, T.cast(shared_y, "int32")
+    
     return [shared(training_data), shared(validation_data), shared(test_data)]
 
-#### Main class used to construct and train networks
+# Main class used to construct and train networks
 class Network(object):
 
     def __init__(self, layers, mini_batch_size):
@@ -88,18 +61,30 @@ class Network(object):
         """
         self.layers = layers
         self.mini_batch_size = mini_batch_size
+        
+        # Get all parameters across all layers
         self.params = [param for layer in self.layers for param in layer.params]
+        
         self.x = T.matrix("x")
         self.y = T.ivector("y")
+        
+        # Setup the first layer of the network
         init_layer = self.layers[0]
         init_layer.set_inpt(self.x, self.x, self.mini_batch_size)
+        
+        # Set subsequent layers with inputs corresponding to
+        # outputs from previous layer
         for j in xrange(1, len(self.layers)):
             prev_layer, layer  = self.layers[j-1], self.layers[j]
-            layer.set_inpt(
-                prev_layer.output, prev_layer.output_dropout, self.mini_batch_size)
+            layer.set_inpt(prev_layer.output,
+                           prev_layer.output_dropout,
+                           self.mini_batch_size)
+                
+        # Set output for the whole network (= final layer's output)
         self.output = self.layers[-1].output
         self.output_dropout = self.layers[-1].output_dropout
         
+        # Initialize empty dicts for storing history values
         self.cost_history = {"iteration": [], "cost": []}
         self.accuracy_history = {"validation": {"epoch": [], "score":[]},
                             "test": {"epoch": [], "score":[]}}
@@ -115,8 +100,12 @@ class Network(object):
         
     def plot_accuracy_curve(self):
         """ Plot accuracy curve """
-        plt.plot(self.accuracy_history["validation"]["epoch"], self.accuracy_history["validation"]["score"], label="Validation")
-        plt.plot(self.accuracy_history["test"]["epoch"], self.accuracy_history["test"]["score"], label="Test")
+        plt.plot(self.accuracy_history["validation"]["epoch"],
+                 self.accuracy_history["validation"]["score"],
+                label="Validation")
+        plt.plot(self.accuracy_history["test"]["epoch"],
+                 self.accuracy_history["test"]["score"],
+                label="Test")
         plt.grid(True)
         plt.title("Accuracy Curve")
         plt.xlabel("Epoch #")
@@ -136,7 +125,7 @@ class Network(object):
         num_validation_batches = size(validation_data)/mini_batch_size
         num_test_batches = size(test_data)/mini_batch_size
 
-        # define the (regularized) cost function, symbolic gradients, and updates
+        # define (regularized) cost function, symbolic gradients, and updates
         l2_norm_squared = sum([(layer.w**2).sum() for layer in self.layers])
         cost = self.layers[-1].cost(self)+\
                0.5*lmbda*l2_norm_squared/num_training_batches
@@ -147,6 +136,7 @@ class Network(object):
         # define functions to train a mini-batch, and to compute the
         # accuracy in validation and test mini-batches.
         i = T.lscalar() # mini-batch index
+        
         train_mb = theano.function(
             [i], cost, updates=updates,
             givens={
@@ -155,6 +145,7 @@ class Network(object):
                 self.y:
                 training_y[i*self.mini_batch_size: (i+1)*self.mini_batch_size]
             })
+            
         validate_mb_accuracy = theano.function(
             [i], self.layers[-1].accuracy(self.y),
             givens={
@@ -163,6 +154,7 @@ class Network(object):
                 self.y:
                 validation_y[i*self.mini_batch_size: (i+1)*self.mini_batch_size]
             })
+            
         test_mb_accuracy = theano.function(
             [i], self.layers[-1].accuracy(self.y),
             givens={
@@ -171,6 +163,7 @@ class Network(object):
                 self.y:
                 test_y[i*self.mini_batch_size: (i+1)*self.mini_batch_size]
             })
+            
         self.test_mb_predictions = theano.function(
             [i], self.layers[-1].y_out,
             givens={
@@ -190,14 +183,20 @@ class Network(object):
                 
                 if iteration % 1000 == 0:
                     print("Training mini-batch {0}/{1} | Cost: {2:.4f} | Elapsed time: {3:.2f}s".format(
-                        iteration, num_training_batches * epochs, float(cost_ij), time.time() - start_time))
+                        iteration,
+                        num_training_batches * epochs,
+                        float(cost_ij),
+                        time.time() - start_time))
+                        
+                    # Store history
                     self.cost_history["iteration"].append(iteration)
                     self.cost_history["cost"].append(cost_ij)
 
                 if (iteration+1) % num_training_batches == 0:
                     validation_accuracy = np.mean(
                         [validate_mb_accuracy(j) for j in xrange(num_validation_batches)])
-                        
+                    
+                    # Store history
                     self.accuracy_history["validation"]["epoch"].append(epoch)                 
                     self.accuracy_history["validation"]["score"].append(validation_accuracy)     
                         
@@ -212,7 +211,8 @@ class Network(object):
                     if test_data:
                         test_accuracy = np.mean(
                             [test_mb_accuracy(j) for j in xrange(num_test_batches)])
-                            
+                        
+                        # Store history
                         self.accuracy_history["test"]["epoch"].append(epoch)                 
                         self.accuracy_history["test"]["score"].append(test_accuracy)
                 
@@ -224,7 +224,7 @@ class Network(object):
             best_validation_accuracy, best_iteration))
         print("Corresponding test accuracy of {0:.2%}".format(test_accuracy))
 
-#### Define layer types
+# Define layer types
 
 class ConvPoolLayer(object):
     """Used to create a combination of a convolutional and a max-pooling
@@ -237,8 +237,8 @@ class ConvPoolLayer(object):
     def __init__(self, filter_shape, image_shape, poolsize=(2, 2),
                  activation_fn=sigmoid):
         """`filter_shape` is a tuple of length 4, whose entries are the number
-        of filters, the number of input feature maps, the filter height, and the
-        filter width.
+        of filters, the number of input feature maps, the filter height, and
+        the filter width.
 
         `image_shape` is a tuple of length 4, whose entries are the
         mini-batch size, the number of input feature maps, the image
@@ -253,7 +253,7 @@ class ConvPoolLayer(object):
         self.poolsize = poolsize
         self.activation_fn = activation_fn
         # initialize weights and biases
-        n_in = np.prod(filter_shape[1:])
+        n_in = np.prod(filter_shape[1:])  # Total number of input params
         # n_out = (filter_shape[0]*np.prod(filter_shape[2:])/np.prod(poolsize))
         self.w = theano.shared(
             np.asarray(
@@ -268,18 +268,25 @@ class ConvPoolLayer(object):
         self.params = [self.w, self.b]
 
     def set_inpt(self, inpt, inpt_dropout, mini_batch_size):
+        # Reshape the input to 2D
         self.inpt = inpt.reshape(self.image_shape)
+        
+        # Do convolution
         self.conv_out = conv2d(
             input=self.inpt, filters=self.w, filter_shape=self.filter_shape,
             input_shape=self.image_shape)
-            
+        
+        # Get the feature maps for this layer
         self.feature_maps = theano.function([self.inpt], self.conv_out)
         
+        # Max pooling
         pooled_out = pool.pool_2d(
             input=self.conv_out, ds=self.poolsize, ignore_border=True)
+            
+        # Apply bias and activation and set as output
         self.output = self.activation_fn(
             pooled_out + self.b.dimshuffle('x', 0, 'x', 'x'))
-        self.output_dropout = self.output # no dropout in the convolutional layers
+        self.output_dropout = self.output # no dropout in convolutional layers
         
     def plot_filters(self, x, y, title):
         """Plot the filters after the (convolutional) layer.
@@ -288,7 +295,7 @@ class ConvPoolLayer(object):
         have 20 filters in the layer, then we can call 
         plot_filters(4, 5, "title") to get a 4 by 5 plot of all layer filters.
         """
-        filters = self.w.eval()
+        filters = self.w.eval()  # Get filter values/weights
         
         fig = plt.figure()
         fig.suptitle(title)
@@ -355,7 +362,7 @@ class SoftmaxLayer(object):
     def set_inpt(self, inpt, inpt_dropout, mini_batch_size):
         self.inpt = inpt.reshape((mini_batch_size, self.n_in))
         self.output = softmax((1-self.p_dropout)*T.dot(self.inpt, self.w) + self.b)
-        self.y_out = T.argmax(self.output, axis=1)
+        self.y_out = T.argmax(self.output, axis=1)  # Predicted class
         self.inpt_dropout = dropout_layer(
             inpt_dropout.reshape((mini_batch_size, self.n_in)), self.p_dropout)
         self.output_dropout = softmax(T.dot(self.inpt_dropout, self.w) + self.b)
@@ -369,7 +376,7 @@ class SoftmaxLayer(object):
         return T.mean(T.eq(y, self.y_out))
 
 
-#### Miscellanea
+# Miscellanea
 def size(data):
     "Return the size of the dataset `data`."
     return data[0].get_value(borrow=True).shape[0]

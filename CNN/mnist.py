@@ -9,7 +9,7 @@ from network import sigmoid, tanh, ReLU, Network
 from network import ConvPoolLayer, FullyConnectedLayer, SoftmaxLayer
 
 # Load MNIST data
-training_data, validation_data, test_data = network.load_data_shared()
+training_data, validation_data, test_data = network.load_mnist_shared()
 
 ## Debug: manually inspect the loaded mnist data
 #import gzip
@@ -46,11 +46,13 @@ def basic_conv(n=3, epochs=60):
             FullyConnectedLayer(n_in=40*4*4, n_out=100),
             SoftmaxLayer(n_in=100, n_out=10)], mini_batch_size)
             
-        net.SGD(training_data, epochs, mini_batch_size, 0.1, validation_data, test_data)
-        nets.append(net)
+        net.SGD(training_data, epochs, mini_batch_size, 0.1,
+                validation_data, test_data)
+                
+        nets.append(net)  # Add current network to list
     return nets
 
-conv_net = basic_conv(n=1, epochs=1)
+conv_net = basic_conv(n=1, epochs=10)
 
 # Plot training curve for 1 network
 conv_net[0].plot_training_curve()

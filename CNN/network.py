@@ -303,13 +303,6 @@ class ConvPoolLayer(object):
         fig.subplots_adjust(top=0.90)
         plt.show()
 
-class MaxPoolLayer(object):
-    def __init__(self, poolsize=(2, 2)):
-        self.poolsize = poolsize
-    
-    def set_inpt(self, inpt, inpt_dropout, mini_batch_size):
-        pass
-
 class FullyConnectedLayer(object):
 
     def __init__(self, n_in, n_out, activation_fn=sigmoid, p_dropout=0.0):

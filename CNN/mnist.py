@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from pylab import imshow, show, cm
 from network import sigmoid, tanh, ReLU, Network
-from network import ConvPoolLayer, FullyConnectedLayer, SoftmaxLayer
+from network import ConvPoolLayer, MaxPoolLayer, FullyConnectedLayer, SoftmaxLayer
 
 # Load MNIST data
 training_data, validation_data, test_data = network.load_data_shared()

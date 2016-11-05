@@ -106,7 +106,6 @@ class Network(object):
                             
     def plot_training_curve(self):
         # Plot training curve
-        plt.figure(0)
         plt.plot(self.cost_history["iteration"], self.cost_history["cost"])
         plt.grid(True)
         plt.title("Training Curve")
@@ -116,7 +115,6 @@ class Network(object):
         
     def plot_accuracy_curve(self):
          # Plot accuracy curve
-        plt.figure(1)
         plt.plot(self.accuracy_history["validation"]["epoch"], self.accuracy_history["validation"]["score"], label="Validation")
         plt.plot(self.accuracy_history["test"]["epoch"], self.accuracy_history["test"]["score"], label="Test")
         plt.grid(True)
@@ -270,28 +268,38 @@ class ConvPoolLayer(object):
 
     def set_inpt(self, inpt, inpt_dropout, mini_batch_size):
         self.inpt = inpt.reshape(self.image_shape)
-        conv_out = conv.conv2d(
+        self.conv_out = conv.conv2d(
             input=self.inpt, filters=self.w, filter_shape=self.filter_shape,
             image_shape=self.image_shape)
+            
+        self.feature_maps = theano.function([self.inpt], self.conv_out)
+        
         pooled_out = pool.pool_2d(
-            input=conv_out, ds=self.poolsize, ignore_border=True)
+            input=self.conv_out, ds=self.poolsize, ignore_border=True)
         self.output = self.activation_fn(
             pooled_out + self.b.dimshuffle('x', 0, 'x', 'x'))
         self.output_dropout = self.output # no dropout in the convolutional layers
         
-    def plot_filters(self, x, y):
+    def plot_filters(self, x, y, title):
         """Plot the filters after the (convolutional) layer.
+        
         They are plotted in x by y format.  So, for example, if we
-        have 20 filters in the layer, then we can call plot_filters(5, 4) to
-        get a 5 by 4 plot of all layer filters."""
+        have 20 filters in the layer, then we can call 
+        plot_filters(4, 5, "title") to get a 4 by 5 plot of all layer filters.
+        """
         filters = self.w.eval()
+        
         fig = plt.figure()
+        fig.suptitle(title)
+        
         for j in range(len(filters)):
-            ax = fig.add_subplot(y, x, j+1)
-            ax.matshow(filters[j][0], cmap = cm.binary)
+            ax = fig.add_subplot(x, y, j+1)
+            ax.matshow(filters[j][0], cmap = cm.gray)
             plt.xticks(np.array([]))
             plt.yticks(np.array([]))
+        
         plt.tight_layout()
+        fig.subplots_adjust(top=0.90)
         plt.show()
 
 class FullyConnectedLayer(object):

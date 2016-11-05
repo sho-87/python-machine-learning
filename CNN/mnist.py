@@ -6,6 +6,7 @@ import network
 from pylab import imshow, show, cm
 from network import sigmoid, tanh, ReLU, Network
 from network import ConvPoolLayer, FullyConnectedLayer, SoftmaxLayer
+from network import plot_filters
 
 # Load MNIST data
 training_data, validation_data, test_data = network.load_data_shared()
@@ -31,6 +32,7 @@ print("Label: {}".format(image_label))
 mini_batch_size = 10
 
 def basic_conv(n=3, epochs=60):
+    nets = []  # list of networks (for ensemble, if desired)
     for j in range(n):
         net = Network([
             ConvPoolLayer(image_shape=(mini_batch_size, 1, 28, 28), 
@@ -40,6 +42,12 @@ def basic_conv(n=3, epochs=60):
             SoftmaxLayer(n_in=100, n_out=10)], mini_batch_size)
             
         net.SGD(training_data, epochs, mini_batch_size, 0.1, validation_data, test_data)
-    return net
-    
-basic_conv(n=1, epochs=3)
+        nets.append(net)
+    return nets
+
+conv_net = basic_conv(n=2, epochs=2)
+
+# Create a plot of the learned filters
+# Specify network number (if ensemble), layer # to visualize
+conv_net_filters = plot_filters(conv_net[0], 0, 5, 4)  # 4x5 subplot of filters
+conv_net_filters.show()

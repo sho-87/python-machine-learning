@@ -42,6 +42,7 @@ from theano.tensor.nnet import conv
 from theano.tensor.nnet import softmax
 from theano.tensor import shared_randomstreams
 from theano.tensor.signal import pool
+from pylab import cm
 
 # Activation functions for neurons
 def linear(z): return z
@@ -350,3 +351,19 @@ def dropout_layer(layer, p_dropout):
         np.random.RandomState(0).randint(999999))
     mask = srng.binomial(n=1, p=1-p_dropout, size=layer.shape)
     return layer*T.cast(mask, theano.config.floatX)
+    
+def plot_filters(net, layer, x, y):
+
+    """Plot the filters for net after the (convolutional) layer number
+    layer.  They are plotted in x by y format.  So, for example, if we
+    have 20 filters after layer 0, then we can call show_filters(net, 0, 5, 4) to
+    get a 5 by 4 plot of all filters."""
+    filters = net.layers[layer].w.eval()
+    fig = plt.figure()
+    for j in range(len(filters)):
+        ax = fig.add_subplot(y, x, j+1)
+        ax.matshow(filters[j][0], cmap = cm.binary)
+        plt.xticks(np.array([]))
+        plt.yticks(np.array([]))
+    plt.tight_layout()
+    return plt

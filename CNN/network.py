@@ -270,7 +270,7 @@ class ConvPoolLayer(object):
         self.inpt = inpt.reshape(self.image_shape)
         self.conv_out = conv2d(
             input=self.inpt, filters=self.w, filter_shape=self.filter_shape,
-            image_shape=self.image_shape)
+            input_shape=self.image_shape)
             
         self.feature_maps = theano.function([self.inpt], self.conv_out)
         

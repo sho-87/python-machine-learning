@@ -302,7 +302,7 @@ class ConvPoolLayer(object):
         
         for j in range(len(filters)):
             ax = fig.add_subplot(x, y, j+1)
-            ax.matshow(filters[j][0], cmap = cm.gray)
+            ax.matshow(filters[j][0])
             plt.xticks(np.array([]))
             plt.yticks(np.array([]))
         

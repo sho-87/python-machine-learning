@@ -8,7 +8,8 @@ This work was done primarily for learning purposes. The following have been impl
 * Logistic Regression (AND gate)
 * Logistic Regression (OR gate)
 * ANN (XOR gate)
-* CNN (hand written digits)
+* CNN (MNIST - hand written digits)
+* CNN (CIFAR10 - colour objects)
 
 **Note**: the code has only been tested on Windows 10 with Python 2.7.12 (64 bit)
 

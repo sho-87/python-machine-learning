@@ -52,7 +52,7 @@ def basic_conv(n=3, epochs=60):
         nets.append(net)  # Add current network to list
     return nets
 
-conv_net = basic_conv(n=1, epochs=10)
+conv_net = basic_conv(n=1, epochs=1)
 
 # Plot training curve for 1 network
 conv_net[0].plot_training_curve()

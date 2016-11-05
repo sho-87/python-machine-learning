@@ -6,3 +6,6 @@
 
 * **mnist.py**
   * CNN for hand written digit recognition (MNIST)
+
+* **cifar10.py**
+  * CNN for colour object classification (CIFAR-10)

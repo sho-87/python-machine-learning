@@ -99,6 +99,32 @@ class Network(object):
                 prev_layer.output, prev_layer.output_dropout, self.mini_batch_size)
         self.output = self.layers[-1].output
         self.output_dropout = self.layers[-1].output_dropout
+        
+        self.cost_history = {"iteration": [], "cost": []}
+        self.accuracy_history = {"validation": {"epoch": [], "score":[]},
+                            "test": {"epoch": [], "score":[]}}
+                            
+    def plot_training_curve(self):
+        # Plot training curve
+        plt.figure(0)
+        plt.plot(self.cost_history["iteration"], self.cost_history["cost"])
+        plt.grid(True)
+        plt.title("Training Curve")
+        plt.xlabel("Iteration #")
+        plt.ylabel("Cost")
+        plt.show()
+        
+    def plot_accuracy_curve(self):
+         # Plot accuracy curve
+        plt.figure(1)
+        plt.plot(self.accuracy_history["validation"]["epoch"], self.accuracy_history["validation"]["score"], label="Validation")
+        plt.plot(self.accuracy_history["test"]["epoch"], self.accuracy_history["test"]["score"], label="Test")
+        plt.grid(True)
+        plt.title("Accuracy Curve")
+        plt.xlabel("Epoch #")
+        plt.ylabel("Accuracy")
+        plt.legend(loc='best')
+        plt.show()
 
     def SGD(self, training_data, epochs, mini_batch_size, alpha,
             validation_data, test_data, lmbda=0.0):
@@ -155,11 +181,7 @@ class Network(object):
             })
             
         # Do the actual training
-        best_validation_accuracy = 0.0
-        cost_history = {"iteration": [], "cost": []}
-        accuracy_history = {"validation": {"epoch": [], "score":[]},
-                            "test": {"epoch": [], "score":[]}}
-                            
+        best_validation_accuracy = 0.0                            
         start_time = time.time()
                             
         for epoch in xrange(epochs):
@@ -171,15 +193,15 @@ class Network(object):
                 if iteration % 1000 == 0:
                     print("Training mini-batch {0}/{1} | Cost: {2:.4f} | Elapsed time: {3:.2f}s".format(
                         iteration, num_training_batches * epochs, float(cost_ij), time.time() - start_time))
-                    cost_history["iteration"].append(iteration)
-                    cost_history["cost"].append(cost_ij)
+                    self.cost_history["iteration"].append(iteration)
+                    self.cost_history["cost"].append(cost_ij)
 
                 if (iteration+1) % num_training_batches == 0:
                     validation_accuracy = np.mean(
                         [validate_mb_accuracy(j) for j in xrange(num_validation_batches)])
                         
-                    accuracy_history["validation"]["epoch"].append(epoch)                 
-                    accuracy_history["validation"]["score"].append(validation_accuracy)     
+                    self.accuracy_history["validation"]["epoch"].append(epoch)                 
+                    self.accuracy_history["validation"]["score"].append(validation_accuracy)     
                         
                     print("Epoch {0}: validation accuracy {1:.2%}".format(
                         epoch, validation_accuracy))
@@ -193,29 +215,11 @@ class Network(object):
                         test_accuracy = np.mean(
                             [test_mb_accuracy(j) for j in xrange(num_test_batches)])
                             
-                        accuracy_history["test"]["epoch"].append(epoch)                 
-                        accuracy_history["test"]["score"].append(test_accuracy)
+                        self.accuracy_history["test"]["epoch"].append(epoch)                 
+                        self.accuracy_history["test"]["score"].append(test_accuracy)
                 
                         print('The corresponding test accuracy is {0:.2%}'.format(
                             test_accuracy))
-        
-        # Plot training curve
-        plt.figure(0)
-        plt.plot(cost_history["iteration"], cost_history["cost"])
-        plt.grid(True)
-        plt.title("Training Curve")
-        plt.xlabel("Iteration #")
-        plt.ylabel("Cost")
-        
-        # Plot accuracy curve
-        plt.figure(1)
-        plt.plot(accuracy_history["validation"]["epoch"], accuracy_history["validation"]["score"], label="Validation")
-        plt.plot(accuracy_history["test"]["epoch"], accuracy_history["test"]["score"], label="Test")
-        plt.grid(True)
-        plt.title("Accuracy Curve")
-        plt.xlabel("Epoch #")
-        plt.ylabel("Accuracy")
-        plt.legend(loc='best')
         
         print("Finished training network.")
         print("Best validation accuracy of {0:.2%} obtained at iteration {1}".format(
@@ -274,6 +278,21 @@ class ConvPoolLayer(object):
         self.output = self.activation_fn(
             pooled_out + self.b.dimshuffle('x', 0, 'x', 'x'))
         self.output_dropout = self.output # no dropout in the convolutional layers
+        
+    def plot_filters(self, x, y):
+        """Plot the filters after the (convolutional) layer.
+        They are plotted in x by y format.  So, for example, if we
+        have 20 filters in the layer, then we can call plot_filters(5, 4) to
+        get a 5 by 4 plot of all layer filters."""
+        filters = self.w.eval()
+        fig = plt.figure()
+        for j in range(len(filters)):
+            ax = fig.add_subplot(y, x, j+1)
+            ax.matshow(filters[j][0], cmap = cm.binary)
+            plt.xticks(np.array([]))
+            plt.yticks(np.array([]))
+        plt.tight_layout()
+        plt.show()
 
 class FullyConnectedLayer(object):
 
@@ -351,19 +370,3 @@ def dropout_layer(layer, p_dropout):
         np.random.RandomState(0).randint(999999))
     mask = srng.binomial(n=1, p=1-p_dropout, size=layer.shape)
     return layer*T.cast(mask, theano.config.floatX)
-    
-def plot_filters(net, layer, x, y):
-
-    """Plot the filters for net after the (convolutional) layer number
-    layer.  They are plotted in x by y format.  So, for example, if we
-    have 20 filters after layer 0, then we can call show_filters(net, 0, 5, 4) to
-    get a 5 by 4 plot of all filters."""
-    filters = net.layers[layer].w.eval()
-    fig = plt.figure()
-    for j in range(len(filters)):
-        ax = fig.add_subplot(y, x, j+1)
-        ax.matshow(filters[j][0], cmap = cm.binary)
-        plt.xticks(np.array([]))
-        plt.yticks(np.array([]))
-    plt.tight_layout()
-    return plt

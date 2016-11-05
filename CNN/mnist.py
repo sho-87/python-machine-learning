@@ -6,7 +6,6 @@ import network
 from pylab import imshow, show, cm
 from network import sigmoid, tanh, ReLU, Network
 from network import ConvPoolLayer, FullyConnectedLayer, SoftmaxLayer
-from network import plot_filters
 
 # Load MNIST data
 training_data, validation_data, test_data = network.load_data_shared()
@@ -45,9 +44,13 @@ def basic_conv(n=3, epochs=60):
         nets.append(net)
     return nets
 
-conv_net = basic_conv(n=2, epochs=2)
+conv_net = basic_conv(n=1, epochs=1)
 
-# Create a plot of the learned filters
-# Specify network number (if ensemble), layer # to visualize
-conv_net_filters = plot_filters(conv_net[0], 0, 5, 4)  # 4x5 subplot of filters
-conv_net_filters.show()
+# Plot training curve for 1 network
+conv_net[0].plot_training_curve()
+
+# Plot validation/test accuracy curve for 1 network
+conv_net[0].plot_accuracy_curve()
+
+# Create a plot of the learned filters for a conv layer
+conv_net[0].layers[0].plot_filters(5, 4)

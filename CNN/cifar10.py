@@ -4,7 +4,7 @@ import network
 import numpy as np
 import theano.tensor as T
 
-from pylab import imshow, show, cm
+from pylab import imshow, show
 from network import sigmoid, tanh, ReLU, Network
 from network import ConvPoolLayer, FullyConnectedLayer, SoftmaxLayer
 
@@ -14,17 +14,6 @@ data_dir = os.path.join(parent_dir, "data")
 data_dir_cifar10 = os.path.join(data_dir, "cifar-10-batches-py")
 class_names_cifar10 = np.load(os.path.join(data_dir_cifar10, "batches.meta"))
 
-def one_hot(x, n):
-    """
-    convert index representation to one-hot representation
-    """
-    x = np.array(x)
-    assert x.ndim == 1
-    return np.eye(n)[x]
-    
-def _grayscale(a):
-    return a.reshape(a.shape[0], 3, 32, 32).mean(1).reshape(a.shape[0], -1)
-
 def _load_batch_cifar10(filename, dtype='float32'):
     """
     load a batch in the CIFAR-10 format
@@ -32,7 +21,7 @@ def _load_batch_cifar10(filename, dtype='float32'):
     path = os.path.join(data_dir_cifar10, filename)
     batch = np.load(path)
     data = batch['data'] / 255.0 # scale between [0, 1]
-    labels = np.array(batch['labels']) # convert labels to one-hot representation
+    labels = np.array(batch['labels'])
     return data.astype(dtype), labels.astype(dtype)
     
 def cifar10(dtype='float32'):
@@ -62,8 +51,6 @@ te_labels = te_labels[5000:]
 train_data = (tr_data, tr_labels)
 validation_data = (val_data, val_labels)
 test_data = (te_data, te_labels)
-
-#labels_test = np.argmax(te_labels, axis=1)
 
 # Load data onto GPU
 theano.config.floatX = 'float32'
@@ -119,7 +106,7 @@ def basic_conv(n=3, epochs=60):
         nets.append(net)  # Add current network to list
     return nets
 
-conv_net = basic_conv(n=1, epochs=2)
+conv_net = basic_conv(n=1, epochs=1)
 
 # Plot training curve for 1 network
 conv_net[0].plot_training_curve()

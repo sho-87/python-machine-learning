@@ -234,8 +234,8 @@ class ConvPoolLayer(object):
 
     """
 
-    def __init__(self, filter_shape, image_shape, poolsize=(2, 2),
-                 activation_fn=sigmoid):
+    def __init__(self, filter_shape, image_shape, border_mode='half',
+                 stride=(1, 1), poolsize=(2, 2), activation_fn=sigmoid):
         """`filter_shape` is a tuple of length 4, whose entries are the number
         of filters, the number of input feature maps, the filter height, and
         the filter width.
@@ -250,8 +250,11 @@ class ConvPoolLayer(object):
         """
         self.filter_shape = filter_shape
         self.image_shape = image_shape
+        self.border_mode = border_mode
+        self.stride = stride
         self.poolsize = poolsize
         self.activation_fn = activation_fn
+        
         # initialize weights and biases
         n_in = np.prod(filter_shape[1:])  # Total number of input params
         # n_out = (filter_shape[0]*np.prod(filter_shape[2:])/np.prod(poolsize))
@@ -274,21 +277,22 @@ class ConvPoolLayer(object):
         # Do convolution
         self.conv_out = conv2d(
             input=self.inpt, filters=self.w, filter_shape=self.filter_shape,
-            input_shape=self.image_shape)
+            input_shape=self.image_shape, border_mode=self.border_mode,
+            subsample=self.stride)
         
         # Get the feature maps for this layer
         self.feature_maps = theano.function([self.inpt], self.conv_out)
         
         # Max pooling
-        pooled_out = pool.pool_2d(
-            input=self.conv_out, ds=self.poolsize, ignore_border=True)
+        pooled_out = pool.pool_2d(input=self.conv_out, ds=self.poolsize,
+                                  ignore_border=True, mode='max')
             
         # Apply bias and activation and set as output
         self.output = self.activation_fn(
             pooled_out + self.b.dimshuffle('x', 0, 'x', 'x'))
         self.output_dropout = self.output # no dropout in convolutional layers
         
-    def plot_filters(self, x, y, title):
+    def plot_filters(self, x, y, title, cmap=cm.gray):
         """Plot the filters after the (convolutional) layer.
         
         They are plotted in x by y format.  So, for example, if we
@@ -302,7 +306,7 @@ class ConvPoolLayer(object):
         
         for j in range(len(filters)):
             ax = fig.add_subplot(x, y, j+1)
-            ax.matshow(filters[j][0])
+            ax.matshow(filters[j][0], cmap=cmap)
             plt.xticks(np.array([]))
             plt.yticks(np.array([]))
         

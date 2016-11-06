@@ -4,7 +4,7 @@ import network
 import numpy as np
 import theano.tensor as T
 
-from pylab import imshow, show
+from pylab import imshow, show, cm
 from network import sigmoid, tanh, ReLU, Network
 from network import ConvPoolLayer, FullyConnectedLayer, SoftmaxLayer
 
@@ -102,10 +102,12 @@ def basic_conv(n=3, epochs=60):
     for j in range(n):
         net = Network([
             ConvPoolLayer(image_shape=(mini_batch_size, 3, 32, 32), 
-                          filter_shape=(20, 3, 5, 5), 
-                          poolsize=(2, 2), 
-                          activation_fn=ReLU),
-            FullyConnectedLayer(n_in=20*14*14, n_out=100),
+                          filter_shape=(20, 3, 5, 5), stride=(1, 1),
+                          poolsize=(2, 2), activation_fn=ReLU),
+            ConvPoolLayer(image_shape=(mini_batch_size, 20, 16, 16), 
+                          filter_shape=(40, 20, 5, 5), stride=(1, 1),
+                          poolsize=(2, 2), activation_fn=ReLU),
+            FullyConnectedLayer(n_in=40*8*8, n_out=100),
             SoftmaxLayer(n_in=100, n_out=10)], mini_batch_size)
             
         net.SGD(train_data, epochs, mini_batch_size, 0.1,
@@ -114,7 +116,7 @@ def basic_conv(n=3, epochs=60):
         nets.append(net)  # Add current network to list
     return nets
 
-conv_net = basic_conv(n=1, epochs=10)
+conv_net = basic_conv(n=1, epochs=2)
 
 # Plot training curve for 1 network
 conv_net[0].plot_training_curve()
@@ -123,4 +125,4 @@ conv_net[0].plot_training_curve()
 conv_net[0].plot_accuracy_curve()
 
 # Create a plot of the learned filters for first conv layer
-conv_net[0].layers[0].plot_filters(4, 5, "Filters - Layer 1")  # 20 filters
+conv_net[0].layers[0].plot_filters(4, 5, "Filters - Layer 1", cmap=cm.rainbow)

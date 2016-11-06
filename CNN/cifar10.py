@@ -45,10 +45,12 @@ def cifar10(dtype='float32'):
 
 # Create validation set from test data
 tr_data, tr_labels, te_data, te_labels = cifar10(dtype=theano.config.floatX)
-val_data = te_data[:5000]  # FIXME: randomize validation set selection
-val_labels = te_labels[:5000]
-te_data = te_data[5000:]
-te_labels = te_labels[5000:]
+
+msk = np.random.rand(len(te_data)) < 0.5
+val_data = te_data[msk]
+val_labels = te_labels[msk]
+te_data = te_data[~msk]
+te_labels = te_labels[~msk]
 
 train_data = (tr_data, tr_labels)
 validation_data = (val_data, val_labels)
@@ -102,13 +104,13 @@ def basic_conv(n=3, epochs=60):
             FullyConnectedLayer(n_in=128*4*4, n_out=100),
             SoftmaxLayer(n_in=100, n_out=10)], mini_batch_size)
             
-        net.SGD(train_data, epochs, mini_batch_size, 0.1,
+        net.SGD(train_data, epochs, mini_batch_size, 0.01,
                 validation_data, test_data)
                 
         nets.append(net)  # Add current network to list
     return nets
 
-conv_net = basic_conv(n=1, epochs=1)
+conv_net = basic_conv(n=1, epochs=10)
 
 # Plot training curve for 1 network
 conv_net[0].plot_training_curve()

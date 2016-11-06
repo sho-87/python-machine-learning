@@ -54,7 +54,7 @@ def cifar10(dtype='float32'):
 
 # Create validation set from test data
 tr_data, tr_labels, te_data, te_labels = cifar10(dtype=theano.config.floatX)
-val_data = te_data[:5000]
+val_data = te_data[:5000]  # FIXME: randomize validation set selection
 val_labels = te_labels[:5000]
 te_data = te_data[5000:]
 te_labels = te_labels[5000:]
@@ -102,12 +102,15 @@ def basic_conv(n=3, epochs=60):
     for j in range(n):
         net = Network([
             ConvPoolLayer(image_shape=(mini_batch_size, 3, 32, 32), 
-                          filter_shape=(20, 3, 5, 5), stride=(1, 1),
+                          filter_shape=(32, 3, 3, 3), stride=(1, 1),
                           poolsize=(2, 2), activation_fn=ReLU),
-            ConvPoolLayer(image_shape=(mini_batch_size, 20, 16, 16), 
-                          filter_shape=(40, 20, 5, 5), stride=(1, 1),
+            ConvPoolLayer(image_shape=(mini_batch_size, 32, 16, 16), 
+                          filter_shape=(80, 32, 3, 3), stride=(1, 1),
                           poolsize=(2, 2), activation_fn=ReLU),
-            FullyConnectedLayer(n_in=40*8*8, n_out=100),
+            ConvPoolLayer(image_shape=(mini_batch_size, 80, 8, 8), 
+                          filter_shape=(128, 80, 3, 3), stride=(1, 1),
+                          poolsize=(2, 2), activation_fn=ReLU),
+            FullyConnectedLayer(n_in=128*4*4, n_out=100),
             SoftmaxLayer(n_in=100, n_out=10)], mini_batch_size)
             
         net.SGD(train_data, epochs, mini_batch_size, 0.1,
@@ -125,4 +128,4 @@ conv_net[0].plot_training_curve()
 conv_net[0].plot_accuracy_curve()
 
 # Create a plot of the learned filters for first conv layer
-conv_net[0].layers[0].plot_filters(4, 5, "Filters - Layer 1", cmap=cm.rainbow)
+conv_net[0].layers[0].plot_filters(6, 6, "Filters - Layer 1")

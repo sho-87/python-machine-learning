@@ -5,7 +5,7 @@ import network
 import matplotlib.pyplot as plt
 
 from pylab import imshow, show, cm
-from network import sigmoid, tanh, ReLU, Network
+from network import Network, relu
 from network import ConvPoolLayer, FullyConnectedLayer, SoftmaxLayer
 
 # Load MNIST data
@@ -37,10 +37,10 @@ def basic_conv(n=3, epochs=60):
         net = Network([
             ConvPoolLayer(image_shape=(mini_batch_size, 1, 28, 28),
                           filter_shape=(20, 1, 5, 5), stride=(1, 1),
-                          poolsize=(2, 2), activation_fn=ReLU),
+                          poolsize=(2, 2), activation_fn=relu),
             ConvPoolLayer(image_shape=(mini_batch_size, 20, 14, 14), 
                           filter_shape=(40, 20, 5, 5), stride=(1, 1),
-                          poolsize=(2, 2), activation_fn=ReLU),
+                          poolsize=(2, 2), activation_fn=relu),
             FullyConnectedLayer(n_in=40*7*7, n_out=100),
             SoftmaxLayer(n_in=100, n_out=10)], mini_batch_size)
             

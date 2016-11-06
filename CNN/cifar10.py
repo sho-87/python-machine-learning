@@ -1,3 +1,5 @@
+# Convolutional Neural Network for CIFAR-10
+
 import os
 import theano
 import network
@@ -5,7 +7,7 @@ import numpy as np
 import theano.tensor as T
 
 from pylab import imshow, show
-from network import sigmoid, tanh, ReLU, Network
+from network import Network, relu
 from network import ConvPoolLayer, FullyConnectedLayer, SoftmaxLayer
 
 # Load CIFAR-10 data
@@ -90,13 +92,13 @@ def basic_conv(n=3, epochs=60):
         net = Network([
             ConvPoolLayer(image_shape=(mini_batch_size, 3, 32, 32), 
                           filter_shape=(32, 3, 3, 3), stride=(1, 1),
-                          poolsize=(2, 2), activation_fn=ReLU),
+                          poolsize=(2, 2), activation_fn=relu),
             ConvPoolLayer(image_shape=(mini_batch_size, 32, 16, 16), 
                           filter_shape=(80, 32, 3, 3), stride=(1, 1),
-                          poolsize=(2, 2), activation_fn=ReLU),
+                          poolsize=(2, 2), activation_fn=relu),
             ConvPoolLayer(image_shape=(mini_batch_size, 80, 8, 8), 
                           filter_shape=(128, 80, 3, 3), stride=(1, 1),
-                          poolsize=(2, 2), activation_fn=ReLU),
+                          poolsize=(2, 2), activation_fn=relu),
             FullyConnectedLayer(n_in=128*4*4, n_out=100),
             SoftmaxLayer(n_in=100, n_out=10)], mini_batch_size)
             

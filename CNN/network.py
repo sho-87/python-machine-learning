@@ -226,6 +226,82 @@ class Network(object):
 
 # Define layer types
 
+class ConvLayer(object):
+    """Used to create a convolutional layer.
+    """
+
+    def __init__(self, filter_shape, image_shape, border_mode='half',
+                 stride=(1, 1), activation_fn=sigmoid):
+        """`filter_shape` is a tuple of length 4, whose entries are the number
+        of filters, the number of input feature maps, the filter height, and
+        the filter width.
+
+        `image_shape` is a tuple of length 4, whose entries are the
+        mini-batch size, the number of input feature maps, the image
+        height, and the image width.
+
+        """
+        self.filter_shape = filter_shape
+        self.image_shape = image_shape
+        self.border_mode = border_mode
+        self.stride = stride
+        self.activation_fn = activation_fn
+        
+        # initialize weights and biases
+        n_in = np.prod(filter_shape[1:])  # Total number of input params
+        # n_out = (filter_shape[0]*np.prod(filter_shape[2:])/np.prod(poolsize))
+        self.w = theano.shared(
+            np.asarray(
+                np.random.normal(loc=0, scale=np.sqrt(1.0/n_in), size=filter_shape),
+                dtype=theano.config.floatX),
+            borrow=True)
+        self.b = theano.shared(
+            np.asarray(
+                np.random.normal(loc=0, scale=1.0, size=(filter_shape[0],)),
+                dtype=theano.config.floatX),
+            borrow=True)
+        self.params = [self.w, self.b]
+
+    def set_inpt(self, inpt, inpt_dropout, mini_batch_size):
+        # Reshape the input to 2D
+        self.inpt = inpt.reshape(self.image_shape)
+        
+        # Do convolution
+        self.conv_out = conv2d(
+            input=self.inpt, filters=self.w, filter_shape=self.filter_shape,
+            input_shape=self.image_shape, border_mode=self.border_mode,
+            subsample=self.stride)
+        
+        # Get the feature maps for this layer
+        self.feature_maps = theano.function([self.inpt], self.conv_out)
+            
+        # Apply bias and activation and set as output
+        self.output = self.activation_fn(
+            self.conv_out + self.b.dimshuffle('x', 0, 'x', 'x'))
+        self.output_dropout = self.output # no dropout in convolutional layers
+        
+    def plot_filters(self, x, y, title, cmap=cm.gray):
+        """Plot the filters after the (convolutional) layer.
+        
+        They are plotted in x by y format.  So, for example, if we
+        have 20 filters in the layer, then we can call 
+        plot_filters(4, 5, "title") to get a 4 by 5 plot of all layer filters.
+        """
+        filters = self.w.eval()  # Get filter values/weights
+        
+        fig = plt.figure()
+        fig.suptitle(title)
+        
+        for j in range(len(filters)):
+            ax = fig.add_subplot(x, y, j+1)
+            ax.matshow(filters[j][0], cmap=cmap)
+            plt.xticks(np.array([]))
+            plt.yticks(np.array([]))
+        
+        plt.tight_layout()
+        fig.subplots_adjust(top=0.90)
+        plt.show()
+
 class ConvPoolLayer(object):
     """Used to create a combination of a convolutional and a max-pooling
     layer.  A more sophisticated implementation would separate the

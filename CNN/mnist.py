@@ -11,7 +11,7 @@ from network import ConvPoolLayer, FullyConnectedLayer, SoftmaxLayer
 # Load MNIST data
 training_data, validation_data, test_data = network.load_mnist_shared()
 
-## Debug: manually inspect the loaded mnist data
+# Debug: manually inspect the loaded mnist data
 #import gzip
 #import cPickle
 #f = gzip.open('../data/mnist.pkl.gz', 'rb')
@@ -50,7 +50,7 @@ def basic_conv(n=3, epochs=60):
         nets.append(net)  # Add current network to list
     return nets
 
-conv_net = basic_conv(n=1, epochs=1)
+conv_net = basic_conv(n=1, epochs=3)
 
 # Plot training curve for 1 network
 conv_net[0].plot_training_curve()

@@ -30,6 +30,18 @@ if GPU:
 else:
     print "Running with a CPU."
 
+# Shared data for GPU
+def shared(data):
+    """Place the data into shared variables.
+    
+    This allows Theano to copy the data to the GPU, if one is available.
+    """
+    shared_x = theano.shared(
+        np.asarray(data[0], dtype=theano.config.floatX), borrow=True)
+    shared_y = theano.shared(
+        np.asarray(data[1], dtype=theano.config.floatX), borrow=True)
+    return shared_x, T.cast(shared_y, "int32")
+
 # Load the MNIST data
 def load_mnist_shared(filename="../data/mnist.pkl.gz"):
     """Load MNIST data from file"""
@@ -37,23 +49,12 @@ def load_mnist_shared(filename="../data/mnist.pkl.gz"):
     training_data, validation_data, test_data = cPickle.load(f)
     f.close()
     
-    def shared(data):
-        """Place the data into shared variables.
-        
-        This allows Theano to copy the data to the GPU, if one is available.
-        """
-        shared_x = theano.shared(
-            np.asarray(data[0], dtype=theano.config.floatX), borrow=True)
-        shared_y = theano.shared(
-            np.asarray(data[1], dtype=theano.config.floatX), borrow=True)
-        return shared_x, T.cast(shared_y, "int32")
-    
     return [shared(training_data), shared(validation_data), shared(test_data)]
 
 # Main class used to construct and train networks
 class Network(object):
 
-    def __init__(self, layers, mini_batch_size):
+    def __init__(self, layers, mini_batch_size, log_freq=1000):
         """Takes a list of `layers`, describing the network architecture, and
         a value for the `mini_batch_size` to be used during training
         by stochastic gradient descent.
@@ -61,6 +62,7 @@ class Network(object):
         """
         self.layers = layers
         self.mini_batch_size = mini_batch_size
+        self.log_freq = log_freq
         
         # Get all parameters across all layers
         self.params = [param for layer in self.layers for param in layer.params]
@@ -181,7 +183,7 @@ class Network(object):
 
                 cost_ij = train_mb(minibatch_index)
                 
-                if iteration % 1000 == 0:
+                if iteration % self.log_freq == 0:
                     print("Training mini-batch {0}/{1} | Cost: {2:.4f} | Elapsed time: {3:.2f}s".format(
                         iteration,
                         num_training_batches * epochs,

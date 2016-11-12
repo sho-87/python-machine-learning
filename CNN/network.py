@@ -148,6 +148,15 @@ class Network(object):
                 training_y[i*self.mini_batch_size: (i+1)*self.mini_batch_size]
             })
             
+        train_mb_accuracy = theano.function(
+            [i], self.layers[-1].accuracy(self.y),
+            givens={
+                self.x:
+                training_x[i*self.mini_batch_size: (i+1)*self.mini_batch_size],
+                self.y:
+                training_y[i*self.mini_batch_size: (i+1)*self.mini_batch_size]
+            })
+            
         validate_mb_accuracy = theano.function(
             [i], self.layers[-1].accuracy(self.y),
             givens={
@@ -195,12 +204,18 @@ class Network(object):
                     self.cost_history["cost"].append(cost_ij)
 
                 if (iteration+1) % num_training_batches == 0:
+                    training_accuracy = np.mean(
+                        [train_mb_accuracy(j) for j in xrange(num_training_batches)])
+                        
                     validation_accuracy = np.mean(
                         [validate_mb_accuracy(j) for j in xrange(num_validation_batches)])
                     
                     # Store history
                     self.accuracy_history["validation"]["epoch"].append(epoch)                 
                     self.accuracy_history["validation"]["score"].append(validation_accuracy)     
+                        
+                    print("Epoch {0}: Training accuracy {1:.2%}".format(
+                                            epoch, training_accuracy))
                         
                     print("Epoch {0}: validation accuracy {1:.2%}".format(
                         epoch, validation_accuracy))

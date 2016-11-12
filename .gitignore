@@ -1,6 +1,7 @@
 # Data
 /data/cifar*
 /data/all_data*.npy
+/Lasagne/*.gz
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

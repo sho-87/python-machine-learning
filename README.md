@@ -10,6 +10,7 @@ This work was done primarily for learning purposes. The following have been impl
 * ANN (XOR gate)
 * CNN (MNIST - hand written digits)
 * CNN (CIFAR10 - colour objects)
+* CNN (EEG - mind wandering classification)
 
 **Note**: the code has only been tested on Windows 10 with Python 2.7.12 (64 bit)
 
@@ -27,6 +28,9 @@ This work was done primarily for learning purposes. The following have been impl
 * [matplotlib](http://matplotlib.org/)
   * Install: `pip install matplotlib`
   * Used for plotting
+* [lasagne](http://lasagne.readthedocs.io/)
+  * Install: `pip install lasagne`
+  * This is only used for the Lasagne implementations of the different models
 
 The quickest/easiest way to get up and running is by installing the [Anaconda Python distribution](https://www.continuum.io/downloads), which comes with all dependencies installed (theano will still need to be installed separately).
 

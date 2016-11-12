@@ -9,3 +9,6 @@
 
 * **cifar10.py**
   * CNN for colour object classification (CIFAR-10)
+
+* **eeg.py**
+  * CNN for classifying mind wandering from EEG data

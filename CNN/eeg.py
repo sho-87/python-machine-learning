@@ -18,10 +18,10 @@ labels = np.load(os.path.join(data_dir, 'all_data_6_full_labels.npy'))
 labels = labels[:,1]
 
 # Create train, validation, test sets
-rng = np.random.RandomState(220)
-indices = rng.permutation(data.shape[0])
+#rng = np.random.RandomState(225)
+indices = np.random.permutation(data.shape[0])
 
-split_train, split_val, split_test = .8, .1, .1
+split_train, split_val, split_test = .6, .2, .2
 
 split_train = int(round(data.shape[0]*split_train))
 split_val = split_train + int(round(data.shape[0]*split_val))
@@ -72,8 +72,8 @@ def basic_conv(n=3, epochs=60):
             SoftmaxLayer(n_in=100, n_out=10)],
             mini_batch_size, 50)
             
-        net.SGD(train_data, epochs, mini_batch_size, 0.1,
-                validation_data, test_data)
+        net.SGD(train_data, epochs, mini_batch_size, 0.001,
+                validation_data, test_data, lmbda=0.0)
                 
         nets.append(net)  # Add current network to list
     return nets

@@ -12,9 +12,9 @@ from network import ConvLayer, ConvPoolLayer, FullyConnectedLayer, SoftmaxLayer
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 data_dir = os.path.join(parent_dir, "data")
 
-data = np.load(os.path.join(data_dir, 'all_data_6_full.npy'))
+data = np.load(os.path.join(data_dir, 'all_data_6_1d_full.npy'))
 
-labels = np.load(os.path.join(data_dir, 'all_data_6_full_labels.npy'))
+labels = np.load(os.path.join(data_dir, 'all_data_6_1d_full_labels.npy'))
 labels = labels[:,1]
 
 # Create train, validation, test sets

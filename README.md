@@ -31,10 +31,8 @@ This work was done primarily for learning purposes. The following have been impl
 * [lasagne](http://lasagne.readthedocs.io/)
   * Install: `pip install lasagne`
   * This is only used for the Lasagne implementations of the different models
+* [nolearn](https://pythonhosted.org/nolearn/)
+  * Install: `pip install nolearn`
+  * This is only used for the lasagne + nolearn implementations of the different models
 
-The quickest/easiest way to get up and running is by installing the [Anaconda Python distribution](https://www.continuum.io/downloads), which comes with all dependencies installed (theano will still need to be installed separately).
-
-## To Do
-
-* Refactor code into classes for modularity
-* (Better) Integration of [Theano](http://deeplearning.net/software/theano/)
+The quickest/easiest way to get up and running is by installing the [Anaconda Python distribution](https://www.continuum.io/downloads), which comes with all dependencies installed (`theano`, `lasagne`, and `nolearn` will still need to be installed separately).

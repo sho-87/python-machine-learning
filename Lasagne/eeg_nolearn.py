@@ -72,8 +72,8 @@ layers0 = [
     (InputLayer, {'shape': (None, x_train.shape[1], x_train.shape[2], x_train.shape[3])}),
 
     # first stage of our convolutional layers
-    (Conv2DLayer, {'num_filters': 20, 'filter_size': (1, 9)}),
-    (MaxPool2DLayer, {'pool_size': (1, 4)}),
+    (Conv2DLayer, {'num_filters': 20, 'filter_size': (9, 1)}),
+    (MaxPool2DLayer, {'pool_size': (4, 1)}),
 
     # two dense layers with dropout
     (DenseLayer, {'num_units': 64}),
@@ -85,7 +85,7 @@ layers0 = [
 # Network parameters
 net0 = NeuralNet(
     layers=layers0,
-    max_epochs=30,
+    max_epochs=10,
     batch_iterator_train = BatchIterator(batch_size=5, shuffle=True),
 
     update=adam,

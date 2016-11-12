@@ -29,7 +29,7 @@ This work was done primarily for learning purposes. The following have been impl
   * Install: `pip install matplotlib`
   * Used for plotting
 * [lasagne](http://lasagne.readthedocs.io/)
-  * Install: `pip install lasagne`
+  * Install: `pip install --upgrade https://github.com/Lasagne/Lasagne/archive/master.zip`
   * This is only used for the Lasagne implementations of the different models
 * [nolearn](https://pythonhosted.org/nolearn/)
   * Install: `pip install nolearn`

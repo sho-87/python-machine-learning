@@ -32,9 +32,9 @@ cost_history = np.zeros(iterations)  # Initialize array of cost history values
 for i in xrange(iterations):  # Batch gradient descent
     residuals = np.dot(x, theta) - y
     squared_error = np.dot(residuals.T, residuals)
-    cost = float(1)/(2*m) * squared_error  # Quadratic loss
+    cost = 1.0/(2*m) * squared_error  # Quadratic loss
     
-    gradient = (float(1)/m) * np.dot(residuals.T, x).T  # Calculate derivative
+    gradient = 1.0/m * np.dot(residuals.T, x).T  # Calculate derivative
     theta -= (alpha * gradient)  # Update weights
     
     cost_history[i] = cost  # Store the cost for this iteration

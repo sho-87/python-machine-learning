@@ -7,10 +7,12 @@ import numpy as np
 import theano
 import theano.tensor as T
 import lasagne
+import matplotlib.pyplot as plt
 
-from lasagne.layers import InputLayer, Conv2DLayer, Pool2DLayer, ElemwiseSumLayer, batch_norm
+from lasagne.layers import InputLayer, Conv1DLayer, Pool1DLayer
 
 UPSAMPLE = True
+VERBOSE = False
 
 # Load EEG data
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -18,6 +20,10 @@ data_dir = os.path.join(parent_dir, "data")
 
 data = np.load(os.path.join(data_dir, 'all_data_1_2d_full.npy'))
 data = data.reshape(-1, 1, 64, 512)
+
+# Change to 64 channels of 1D vectors
+data = np.transpose(data,(0, 2, 1, 3))  # Equivalent do tensor dimshuffle
+data = data.squeeze()
 
 data_labels = np.load(os.path.join(data_dir, 'all_data_1_2d_full_labels.npy'))
 data_labels = data_labels[:,1]
@@ -63,72 +69,36 @@ test_labels = data_labels[test_idx]
 
 def build_cnn(input_var=None):
     # Input layer, as usual:
-    l_in = InputLayer(shape=(None, 1, 64, 512), input_var=input_var)
+    l_in = InputLayer(shape=(None, 64, 512), input_var=input_var)
 
-    conv1 = Conv2DLayer(incoming = l_in, num_filters = 256, filter_size = (1, 9),
+    l_conv1 = Conv1DLayer(incoming = l_in, num_filters = 128, filter_size = 3,
                         stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
                         nonlinearity = lasagne.nonlinearities.very_leaky_rectify)
-    print('conv1', lasagne.layers.get_output_shape(conv1))
-
-    bn1 = batch_norm(conv1)
-    print('bn1', lasagne.layers.get_output_shape(bn1))
-
-    pool1 = Pool2DLayer(incoming = bn1, pool_size = (1, 4), stride = (1, 4))
-    print('pool1', lasagne.layers.get_output_shape(pool1))
-
-    drop1 = lasagne.layers.DropoutLayer(incoming = pool1, p = 0)
-    print('drop1', lasagne.layers.get_output_shape(drop1))
-    
-    # Recurrent convolution
-
-    conv2 = Conv2DLayer(incoming = drop1, num_filters = 256, filter_size = (1, 1),
+                        
+    l_conv2 = Conv1DLayer(incoming = l_conv1, num_filters = 128, filter_size = 3,
                         stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
                         nonlinearity = lasagne.nonlinearities.very_leaky_rectify)
-    print('conv2', lasagne.layers.get_output_shape(conv2))
-
-    bn2 = batch_norm(conv2)
-    print('bn2', lasagne.layers.get_output_shape(bn2))
-
-    conv2a = Conv2DLayer(incoming = bn2, num_filters = 256, filter_size = (1, 9),
-                         stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02), b = None,
-                         nonlinearity = lasagne.nonlinearities.rectify)
-    print('conv2a', lasagne.layers.get_output_shape(conv2a))
-
-    sum2a = ElemwiseSumLayer(incomings = [conv2, conv2a], coeffs = 1)
-    print('sum2a', lasagne.layers.get_output_shape(sum2a))
+                        
+    l_conv3 = Conv1DLayer(incoming = l_conv2, num_filters = 128, filter_size = 3,
+                        stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
+                        nonlinearity = lasagne.nonlinearities.very_leaky_rectify)    
+                        
+    l_pool1 = Pool1DLayer(incoming = l_conv3, pool_size = 4, stride = 4)
     
-    bn2a = batch_norm(sum2a)    
-    print('bn2a', lasagne.layers.get_output_shape(bn2a))
-
-    conv2b = Conv2DLayer(incoming = bn2a, num_filters = 256, filter_size = (1, 9),
-                         stride = 1, pad = 'same', W = conv2a.W, b = None,
-                         nonlinearity = lasagne.nonlinearities.rectify)
-    print('conv2b', lasagne.layers.get_output_shape(conv2b))
-
-    sum2b = ElemwiseSumLayer(incomings = [conv2, conv2b], coeffs = 1)
-    print('sum2b', lasagne.layers.get_output_shape(sum2b))
-    
-    bn2b = batch_norm(sum2b)    
-    print('bn2b', lasagne.layers.get_output_shape(bn2b))
-
-    conv2c = Conv2DLayer(incoming = bn2b, num_filters = 256, filter_size = (1, 9),
-                         stride = 1, pad = 'same', W = conv2a.W, b = None,
-                         nonlinearity = lasagne.nonlinearities.rectify)
-    print('conv2c', lasagne.layers.get_output_shape(conv2c))
-
-    sum2c = ElemwiseSumLayer(incomings = [conv2, conv2c], coeffs = 1)
-    print('sum2c', lasagne.layers.get_output_shape(sum2c))
-    
-    bn2c = batch_norm(sum2c)    
-    print('bn2c', lasagne.layers.get_output_shape(bn2c))
-
-    pool2 = Pool2DLayer(incoming = bn2c, pool_size = (1, 4), stride = (1, 4))
-    print('pool2', lasagne.layers.get_output_shape(pool2))
+    l_conv5 = Conv1DLayer(incoming = l_pool1, num_filters = 128, filter_size = 3,
+                        stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
+                        nonlinearity = lasagne.nonlinearities.very_leaky_rectify)
+                        
+    l_conv6 = Conv1DLayer(incoming = l_conv5, num_filters = 128, filter_size = 3,
+                        stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
+                        nonlinearity = lasagne.nonlinearities.very_leaky_rectify)
+                        
+    l_pool2 = Pool1DLayer(incoming = l_conv6, pool_size = 4, stride = 4)
 
     # A fully-connected layer
     l_fc = lasagne.layers.DenseLayer(
-            lasagne.layers.dropout(pool2, p=.5),
-            num_units=256,
+            lasagne.layers.dropout(l_pool2, p=.5),
+            num_units=512,
             nonlinearity=lasagne.nonlinearities.rectify)
 
     l_out = lasagne.layers.DenseLayer(
@@ -170,7 +140,7 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
 
 def main(model='cnn', batch_size=500, num_epochs=500):
     # Prepare Theano variables for inputs and targets
-    input_var = T.tensor4('inputs')
+    input_var = T.tensor3('inputs')
     target_var = T.ivector('targets')
 
     network = build_cnn(input_var)
@@ -181,6 +151,8 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     loss = lasagne.objectives.categorical_crossentropy(prediction, target_var)
     loss = loss.mean()
     # We could add some weight decay as well here, see lasagne.regularization.
+    reg_l2 = lasagne.regularization.l2(input_var)
+    loss += 0.001 * reg_l2
     
     train_acc = T.mean(T.eq(T.argmax(prediction, axis=1), target_var),
                       dtype=theano.config.floatX)
@@ -190,8 +162,8 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     # Descent (SGD) with Nesterov momentum, but Lasagne offers plenty more.
     params = lasagne.layers.get_all_params(network, trainable=True)
     
-    updates = lasagne.updates.adam(loss, params, learning_rate=0.001)
-    #updates = lasagne.updates.nesterov_momentum(loss, params, learning_rate=0.01)
+    #updates = lasagne.updates.adam(loss, params, learning_rate=0.1)
+    updates = lasagne.updates.nesterov_momentum(loss, params, learning_rate=0.001)
 
     # Create a loss expression for validation/testing. The crucial difference
     # here is that we do a deterministic forward pass through the network,
@@ -211,6 +183,9 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     # Compile a second function computing the validation loss and accuracy:
     val_fn = theano.function([input_var, target_var], [test_loss, test_acc])
 
+    training_hist = []
+    val_hist = []    
+    
     # Finally, launch the training loop.
     print("Starting training...")
     # We iterate over epochs:
@@ -227,11 +202,14 @@ def main(model='cnn', batch_size=500, num_epochs=500):
             train_err += err
             train_acc += acc
             train_batches += 1
-            print("Epoch: {} | Mini-batch: {}/{} | Elapsed time: {:.2f}s".format(
-                    epoch+1,
-                    train_batches,
-                    train_data.shape[0]/batch_size,
-                    time.time()-start_time))
+            if VERBOSE:
+                print("Epoch: {} | Mini-batch: {}/{} | Elapsed time: {:.2f}s".format(
+                        epoch+1,
+                        train_batches,
+                        train_data.shape[0]/batch_size,
+                        time.time()-start_time))
+
+        training_hist.append(train_err / train_batches)
 
         # And a full pass over the validation data:
         print("Validating epoch...")
@@ -244,6 +222,8 @@ def main(model='cnn', batch_size=500, num_epochs=500):
             val_err += err
             val_acc += acc
             val_batches += 1
+            
+        val_hist.append(val_err / val_batches)
 
         # Then we print the results for this epoch:
         print("Epoch {} of {} took {:.3f}s".format(
@@ -269,6 +249,17 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     print("  test loss:\t\t\t{:.6f}".format(test_err / test_batches))
     print("  test accuracy:\t\t{:.2f} %".format(
         test_acc / test_batches * 100))
+        
+    # Plot learning
+    plt.plot(range(1, num_epochs+1), training_hist, label="Training")
+    plt.plot(range(1, num_epochs+1), val_hist, label="Validation")
+    plt.grid(True)
+    plt.title("Training Curve")
+    plt.xlim(1, num_epochs+1)
+    plt.xlabel("Epoch #")
+    plt.ylabel("Loss")
+    plt.legend(loc='best')
+    plt.show()
 
     # Optionally, you could now dump the network weights to a file like this:
     # np.savez('model.npz', *lasagne.layers.get_all_param_values(network))
@@ -279,4 +270,4 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     # lasagne.layers.set_all_param_values(network, param_values)
 
 # Run the model
-main(batch_size=5, num_epochs=3)
+main(batch_size=100, num_epochs=20)

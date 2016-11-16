@@ -8,24 +8,30 @@ import theano
 import theano.tensor as T
 import lasagne
 import matplotlib.pyplot as plt
+import scipy.stats as stats
 
 from lasagne.layers import InputLayer, Conv1DLayer, Pool1DLayer
+from lasagne.regularization import regularize_layer_params, l2
 
 UPSAMPLE = True
 VERBOSE = False
 
 # Load EEG data
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-data_dir = os.path.join(parent_dir, "data")
+base_dir = os.path.abspath(os.path.join(os.path.join(os.path.dirname(__file__), os.pardir), os.pardir))
+data_dir = os.path.join(base_dir, "data")
 
-data = np.load(os.path.join(data_dir, 'all_data_1_2d_full.npy'))
+data = np.load(os.path.join(data_dir, 'all_data_6_2d_full.npy'))
 data = data.reshape(-1, 1, 64, 512)
 
 # Change to 64 channels of 1D vectors
 data = np.transpose(data,(0, 2, 1, 3))  # Equivalent do tensor dimshuffle
 data = data.squeeze()
 
-data_labels = np.load(os.path.join(data_dir, 'all_data_1_2d_full_labels.npy'))
+# Standardize data per channel
+data = stats.zscore(data, axis=2)  # Significantly improves gradient descent
+
+# Get labels
+data_labels = np.load(os.path.join(data_dir, 'all_data_6_2d_full_labels.npy'))
 data_labels = data_labels[:,1]
 
 # Upsample the under-represented MW class
@@ -46,7 +52,6 @@ if UPSAMPLE:
     data_labels = np.concatenate((data_labels, mw_data_labels_boot), axis=0)
 
 # Create train, validation, test sets
-#rng = np.random.RandomState(225)
 indices = np.random.permutation(data.shape[0])
 
 split_train, split_val, split_test = .6, .2, .2
@@ -75,34 +80,16 @@ def build_cnn(input_var=None):
                         stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
                         nonlinearity = lasagne.nonlinearities.very_leaky_rectify)
                         
-    l_conv2 = Conv1DLayer(incoming = l_conv1, num_filters = 128, filter_size = 3,
-                        stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
-                        nonlinearity = lasagne.nonlinearities.very_leaky_rectify)
-                        
-    l_conv3 = Conv1DLayer(incoming = l_conv2, num_filters = 128, filter_size = 3,
-                        stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
-                        nonlinearity = lasagne.nonlinearities.very_leaky_rectify)    
-                        
-    l_pool1 = Pool1DLayer(incoming = l_conv3, pool_size = 4, stride = 4)
-    
-    l_conv5 = Conv1DLayer(incoming = l_pool1, num_filters = 128, filter_size = 3,
-                        stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
-                        nonlinearity = lasagne.nonlinearities.very_leaky_rectify)
-                        
-    l_conv6 = Conv1DLayer(incoming = l_conv5, num_filters = 128, filter_size = 3,
-                        stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
-                        nonlinearity = lasagne.nonlinearities.very_leaky_rectify)
-                        
-    l_pool2 = Pool1DLayer(incoming = l_conv6, pool_size = 4, stride = 4)
+    l_pool1 = Pool1DLayer(incoming = l_conv1, pool_size = 4, stride = 4)
 
     # A fully-connected layer
     l_fc = lasagne.layers.DenseLayer(
-            lasagne.layers.dropout(l_pool2, p=.5),
+            l_pool1,
             num_units=512,
             nonlinearity=lasagne.nonlinearities.rectify)
 
     l_out = lasagne.layers.DenseLayer(
-            lasagne.layers.dropout(l_fc, p=.5),
+            l_fc,
             num_units=2,
             nonlinearity=lasagne.nonlinearities.softmax)
 
@@ -150,9 +137,10 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     prediction = lasagne.layers.get_output(network)
     loss = lasagne.objectives.categorical_crossentropy(prediction, target_var)
     loss = loss.mean()
+    
     # We could add some weight decay as well here, see lasagne.regularization.
-    reg_l2 = lasagne.regularization.l2(input_var)
-    loss += 0.001 * reg_l2
+    l2_reg = regularize_layer_params(network, l2) * 0.3
+    loss += l2_reg
     
     train_acc = T.mean(T.eq(T.argmax(prediction, axis=1), target_var),
                       dtype=theano.config.floatX)
@@ -163,7 +151,7 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     params = lasagne.layers.get_all_params(network, trainable=True)
     
     #updates = lasagne.updates.adam(loss, params, learning_rate=0.1)
-    updates = lasagne.updates.nesterov_momentum(loss, params, learning_rate=0.001)
+    updates = lasagne.updates.nesterov_momentum(loss, params, learning_rate=0.01)
 
     # Create a loss expression for validation/testing. The crucial difference
     # here is that we do a deterministic forward pass through the network,

@@ -10,9 +10,6 @@ This directory contains models implemented using the Lasagne library, which is j
   * CNN for hand written digit recognition (MNIST)
   * Uses the nolearn package as a wrapper around lasagne and theano for learning diagnostics
 
-* **eeg_lasagne.py**
-  * CNN for EEG classification
-
 * **eeg_nolearn.py**
   * CNN for EEG classification
   * Uses the nolearn package as a wrapper around lasagne and theano for learning diagnostics

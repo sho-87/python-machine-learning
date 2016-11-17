@@ -20,6 +20,10 @@ VERBOSE = False
 base_dir = os.path.abspath(os.path.join(os.path.join(os.path.dirname(__file__), os.pardir), os.pardir))
 data_dir = os.path.join(base_dir, "data")
 
+# Get labels
+data_labels = np.load(os.path.join(data_dir, 'all_data_6_2d_full_labels.npy'))
+data_labels = data_labels[:,1]
+
 data = np.load(os.path.join(data_dir, 'all_data_6_2d_full.npy'))
 data = data.reshape(-1, 1, 64, 512)
 
@@ -27,12 +31,21 @@ data = data.reshape(-1, 1, 64, 512)
 data = np.transpose(data,(0, 2, 1, 3))  # Equivalent do tensor dimshuffle
 data = data.squeeze()
 
+# Augment data
+augmented_data = (
+    data*1.05,
+    data*0.95,
+    data+0.01,
+    data-0.01
+)
+
+for aug in augmented_data:
+    data = np.concatenate((data, aug), axis=0)
+
+data_labels = np.tile(data_labels, len(augmented_data)+1)
+
 # Standardize data per channel
 data = stats.zscore(data, axis=2)  # Significantly improves gradient descent
-
-# Get labels
-data_labels = np.load(os.path.join(data_dir, 'all_data_6_2d_full_labels.npy'))
-data_labels = data_labels[:,1]
 
 # Upsample the under-represented MW class
 if UPSAMPLE:
@@ -76,7 +89,7 @@ def build_cnn(input_var=None):
     # Input layer, as usual:
     l_in = InputLayer(shape=(None, 64, 512), input_var=input_var)
 
-    l_conv1 = Conv1DLayer(incoming = l_in, num_filters = 64, filter_size = 3,
+    l_conv1 = Conv1DLayer(incoming = l_in, num_filters = 5, filter_size = 3,
                         stride = 2, pad = 'same', W = lasagne.init.Normal(std = 0.02),
                         nonlinearity = lasagne.nonlinearities.rectify)
                         

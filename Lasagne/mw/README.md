@@ -13,3 +13,6 @@ Classification of EEG data using Lasagne
 
 * **4_eeg_mw_dropout.py**
   * Dropout added to prevent overfitting
+
+* **5_eeg_mw_augment.py**
+  * Augment data with scale and translation to get more training examples

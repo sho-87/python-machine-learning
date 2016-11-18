@@ -78,6 +78,6 @@ plt.xlabel("Iteration #")
 plt.ylabel("Cost")
 
 # Predictions
-test_data = [[0,0], [1,1], [1,1], [1,0]]
+test_data = [[0,0], [1,1], [0,1], [1,0]]
 predictions = predict(test_data)
 print predictions

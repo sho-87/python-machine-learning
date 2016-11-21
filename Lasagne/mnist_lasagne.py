@@ -3,17 +3,14 @@ from __future__ import print_function
 import sys
 import os
 import time
-
+import lasagne
 import numpy as np
+import matplotlib.pyplot as plt
 import theano
 import theano.tensor as T
 
-import lasagne
+from pylab import cm, imshow, show
 
-
-# ################## Download and prepare the MNIST dataset ##################
-# This is just some way of getting the MNIST dataset from an online location
-# and loading it into numpy arrays. It doesn't involve Lasagne at all.
 
 def load_dataset():
     # We first define a download function, supporting both Python 2 and 3.
@@ -64,33 +61,19 @@ def load_dataset():
     y_train, y_val = y_train[:-10000], y_train[-10000:]
 
     # We just return all the arrays in order, as expected in main().
-    # (It doesn't matter how we do this as long as we can read them again.)
     return X_train, y_train, X_val, y_val, X_test, y_test
     
 def build_cnn(input_var=None):
-    # As a third model, we'll create a CNN of two convolution + pooling stages
-    # and a fully-connected hidden layer in front of the output layer.
-
-    # Input layer, as usual:
     l_in = lasagne.layers.InputLayer(shape=(None, 1, 28, 28),
                                         input_var=input_var)
-    # This time we do not apply input dropout, as it tends to work less well
-    # for convolutional layers.
 
-    # Convolutional layer with 32 kernels of size 5x5. Strided and padded
-    # convolutions are supported as well; see the docstring.
     l_c1 = lasagne.layers.Conv2DLayer(
             l_in, num_filters=32, filter_size=(5, 5),
             nonlinearity=lasagne.nonlinearities.rectify,
             W=lasagne.init.GlorotUniform())
-    # Expert note: Lasagne provides alternative convolutional layers that
-    # override Theano's choice of which implementation to use; for details
-    # please see http://lasagne.readthedocs.org/en/latest/user/tutorial.html.
 
-    # Max-pooling layer of factor 2 in both dimensions:
     l_p1 = lasagne.layers.MaxPool2DLayer(l_c1, pool_size=(2, 2))
 
-    # Another convolution with 32 5x5 kernels, and another 2x2 pooling:
     l_c2 = lasagne.layers.Conv2DLayer(
             l_p1, num_filters=32, filter_size=(5, 5),
             nonlinearity=lasagne.nonlinearities.rectify)
@@ -136,28 +119,14 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
         yield inputs[excerpt], targets[excerpt]
 
 
-# ############################## Main program ################################
-# Everything else will be handled in our main program now. We could pull out
-# more functions to better separate the code, but it wouldn't make it any
-# easier to read.
-
 def main(model='cnn', batch_size=500, num_epochs=500):
-    # Load the dataset
-    print("Loading data...")
-    X_train, y_train, X_val, y_val, X_test, y_test = load_dataset()
-
     # Prepare Theano variables for inputs and targets
     input_var = T.tensor4('inputs')
     target_var = T.ivector('targets')
 
-    # Create neural network model (depending on first command line parameter)
     print("Building model and compiling functions...")
-    if model == 'cnn':
-        network = build_cnn(input_var)
-    else:
-        print("Unrecognized model type %r." % model)
-        return
-
+    network = build_cnn(input_var)
+    
     # Create a loss expression for training, i.e., a scalar objective we want
     # to minimize (for our multi-class problem, it is the cross-entropy loss):
     prediction = lasagne.layers.get_output(network)
@@ -168,9 +137,7 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     train_acc = T.mean(T.eq(T.argmax(prediction, axis=1), target_var),
                       dtype=theano.config.floatX)
 
-    # Create update expressions for training, i.e., how to modify the
-    # parameters at each training step. Here, we'll use Stochastic Gradient
-    # Descent (SGD) with Nesterov momentum, but Lasagne offers plenty more.
+    # Create update expressions for training
     params = lasagne.layers.get_all_params(network, trainable=True)
     updates = lasagne.updates.nesterov_momentum(
             loss, params, learning_rate=0.01, momentum=0.9)
@@ -182,7 +149,8 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     test_loss = lasagne.objectives.categorical_crossentropy(test_prediction,
                                                             target_var)
     test_loss = test_loss.mean()
-    # As a bonus, also create an expression for the classification accuracy:
+    
+    # Create an expression for the classification accuracy:
     test_acc = T.mean(T.eq(T.argmax(test_prediction, axis=1), target_var),
                       dtype=theano.config.floatX)
 
@@ -195,6 +163,7 @@ def main(model='cnn', batch_size=500, num_epochs=500):
 
     # Finally, launch the training loop.
     print("Starting training...")
+    
     # We iterate over epochs:
     for epoch in range(num_epochs):
         # In each epoch, we do a full pass over the training data:
@@ -244,7 +213,7 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     print("  test loss:\t\t\t{:.6f}".format(test_err / test_batches))
     print("  test accuracy:\t\t{:.2f} %".format(
         test_acc / test_batches * 100))
-
+    
     # Optionally, you could now dump the network weights to a file like this:
     # np.savez('model.npz', *lasagne.layers.get_all_param_values(network))
     #
@@ -252,6 +221,60 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     # with np.load('model.npz') as f:
     #     param_values = [f['arr_%d' % i] for i in range(len(f.files))]
     # lasagne.layers.set_all_param_values(network, param_values)
+    
+    all_layers = lasagne.layers.get_all_param_values(network)
 
-# Run the model
-main(batch_size=50, num_epochs=3)
+    return all_layers
+
+# Load the dataset
+print("Loading data...")
+X_train, y_train, X_val, y_val, X_test, y_test = load_dataset()
+
+# Run the model 
+weights = main(batch_size=50, num_epochs=5)
+c1_kernels = weights[0]
+
+# Plot single example
+image_num = np.random.randint(0, X_train.shape[0])
+image_label = y_train[image_num]
+image_array = X_train[image_num][0]
+image_2d = np.reshape(image_array, (28, 28))
+image_4d = image_2d.reshape(1, 1, 28, 28)
+
+imshow(image_2d, cmap=cm.gray)
+show()
+print("Label: {}".format(image_label))
+
+# Plot layer 1 kernels
+fig = plt.figure()
+fig.suptitle("Kernels")
+
+for j in range(len(c1_kernels)):
+    ax = fig.add_subplot(6, 6, j+1)
+    ax.matshow(c1_kernels[j][0], cmap=cm.gray)
+    plt.xticks(np.array([]))
+    plt.yticks(np.array([]))
+
+plt.tight_layout()
+fig.subplots_adjust(top=0.90)
+plt.show()
+
+# Plot activation maps
+x = T.tensor4().astype(theano.config.floatX)
+conv_out = T.nnet.conv2d(input=x, filters=c1_kernels)
+
+get_activity = theano.function([x], conv_out)
+activation = get_activity(image_4d)
+
+fig = plt.figure()
+fig.suptitle("Feature Maps")
+
+for j in range(len(c1_kernels)):
+    ax = fig.add_subplot(6, 6, j+1)
+    ax.matshow(activation[0][j], cmap=cm.gray)
+    plt.xticks(np.array([]))
+    plt.yticks(np.array([]))
+
+plt.tight_layout()
+fig.subplots_adjust(top=0.90)
+plt.show()

@@ -20,6 +20,8 @@ VERBOSE = False
 base_dir = os.path.abspath(os.path.join(os.path.join(os.path.dirname(__file__), os.pardir), os.pardir))
 data_dir = os.path.join(base_dir, "data")
 
+base = os.path.dirname(__file__)
+
 # Get labels
 data_labels = np.load(os.path.join(data_dir, 'all_data_6_2d_full_labels.npy'))
 data_labels = data_labels[:,1]
@@ -33,10 +35,10 @@ data = data.squeeze()
 
 # Augment data
 augmented_data = (
-    data*1.05,
-    data*0.95,
-    data+0.01,
-    data-0.01
+    data*1.001,
+    data*0.999,
+    data+0.001,
+    data-0.001
 )
 
 for aug in augmented_data:
@@ -89,7 +91,7 @@ def build_cnn(input_var=None):
     # Input layer, as usual:
     l_in = InputLayer(shape=(None, 64, 512), input_var=input_var)
 
-    l_conv1 = Conv1DLayer(incoming = l_in, num_filters = 5, filter_size = 3,
+    l_conv1 = Conv1DLayer(incoming = l_in, num_filters = 256, filter_size = 3,
                         stride = 2, pad = 'same', W = lasagne.init.Normal(std = 0.02),
                         nonlinearity = lasagne.nonlinearities.rectify)
                         
@@ -271,4 +273,4 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     # lasagne.layers.set_all_param_values(network, param_values)
 
 # Run the model
-main(batch_size=100, num_epochs=100)
+main(batch_size=100, num_epochs=10)

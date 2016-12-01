@@ -32,17 +32,16 @@ data = np.transpose(data,(0, 2, 1, 3))  # Equivalent do tensor dimshuffle
 data = data.squeeze()
 
 # Augment data
-augmented_data = (
-    data*1.001,
-    data*0.999,
-    data+0.001,
-    data-0.001
-)
+num_reps = 4
+orig_data = data
 
-for aug in augmented_data:
-    data = np.concatenate((data, aug), axis=0)
+for i in range(num_reps):
+    print("Adding noise #{}...".format(i+1))
+    noise = np.random.normal(0, 0.001, orig_data.shape).astype('float32')
+    noisy_data = np.add(orig_data, noise)
+    data = np.concatenate((data, noisy_data), axis=0)
 
-data_labels = np.tile(data_labels, len(augmented_data)+1)
+data_labels = np.tile(data_labels, num_reps+1)
 
 # Standardize data per channel
 data = stats.zscore(data, axis=2)  # Significantly improves gradient descent

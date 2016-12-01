@@ -16,3 +16,6 @@ Classification of EEG data using Lasagne
 
 * **5a_eeg_mw_augment_linear.py**
   * Augment data with linear transformations (scale and translation) to get more training examples
+
+* **5b_eeg_mw_augment_noise.py**
+  * Augment data with noise instead of transformations

@@ -32,12 +32,12 @@ data = np.transpose(data,(0, 2, 1, 3))  # Equivalent do tensor dimshuffle
 data = data.squeeze()
 
 # Augment data
-num_reps = 4
+num_reps = 5
 orig_data = data
 
 for i in range(num_reps):
     print("Adding noise #{}...".format(i+1))
-    noise = np.random.normal(0, 0.001, orig_data.shape).astype('float32')
+    noise = np.random.normal(0, 0.01, orig_data.shape).astype('float32')
     noisy_data = np.add(orig_data, noise)
     data = np.concatenate((data, noisy_data), axis=0)
 
@@ -270,4 +270,4 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     # lasagne.layers.set_all_param_values(network, param_values)
 
 # Run the model
-main(batch_size=100, num_epochs=10)
+main(batch_size=100, num_epochs=50)

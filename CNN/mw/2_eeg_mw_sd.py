@@ -7,7 +7,6 @@ import theano
 import theano.tensor as T
 import lasagne
 import matplotlib.pyplot as plt
-import scipy.stats as stats
 
 from tqdm import tqdm
 from lasagne.layers import InputLayer, Conv2DLayer, Pool2DLayer
@@ -86,8 +85,9 @@ data = data.reshape(-1, 1, 64, 512)
 data_labels = np.load(os.path.join(data_dir, 'all_data_6_2d_full_labels.npy'))
 data_labels = data_labels[:,1]
 
-# Standardize data per channel
-data = stats.zscore(data, axis=2)  # Significantly improves gradient descent
+# Standardize data per trial
+# Significantly improves gradient descent
+data = (data - data.mean(axis=(2,3),keepdims=1)) / data.std(axis=(2,3),keepdims=1)
 
 # Up/downsample the data to balance classes
 data, data_labels = bootstrap(data, data_labels, "downsample")
@@ -117,7 +117,7 @@ def build_cnn(input_var=None):
     # Input layer, as usual:
     l_in = InputLayer(shape=(None, 1, 64, 512), input_var=input_var)
 
-    l_conv1 = Conv2DLayer(incoming = l_in, num_filters = 4, filter_size = 3,
+    l_conv1 = Conv2DLayer(incoming = l_in, num_filters = 4, filter_size = (5,5),
                         stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
                         nonlinearity = lasagne.nonlinearities.very_leaky_rectify) 
                         
@@ -153,6 +153,7 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
     if shuffle:
         indices = np.arange(len(inputs))
         np.random.shuffle(indices)
+    # tqdm() can be removed if no visual progress bar is needed
     for start_idx in tqdm(range(0, len(inputs) - batchsize + 1, batchsize)):
         if shuffle:
             excerpt = indices[start_idx:start_idx + batchsize]
@@ -288,4 +289,4 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     # lasagne.layers.set_all_param_values(network, param_values)
 
 # Run the model
-main(batch_size=5, num_epochs=20)
+main(batch_size=5, num_epochs=10)

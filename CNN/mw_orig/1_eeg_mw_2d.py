@@ -2,78 +2,17 @@ from __future__ import print_function
 
 import os
 import time
+
 import numpy as np
 import theano
 import theano.tensor as T
 import lasagne
 import matplotlib.pyplot as plt
 
-from tqdm import tqdm
 from lasagne.layers import InputLayer, Conv2DLayer, Pool2DLayer
 
-VERBOSE = False
-
-def bootstrap(data, labels, boot_type="downsample"):
-    print("Bootstrapping data...")
-    ot_class = 0
-    mw_class = 1
-    
-    ot_idx = np.where(labels == ot_class)
-    mw_idx = np.where(labels == mw_class)
-    
-    # Get OT examples
-    ot_data = data[ot_idx]
-    ot_labels = labels[ot_idx]
-    print(" - OT (class: {}) | Data: {} | Labels: {}".format(ot_class, ot_data.shape, ot_labels.shape))
-    
-    # Get MW examples
-    mw_data = data[mw_idx]
-    mw_labels = labels[mw_idx]
-    print(" - MW (class: {}) | Data: {} | Labels: {}".format(mw_class, mw_data.shape, mw_labels.shape))
-    
-    # Set majority and minority classes
-    if ot_data.shape[0] > mw_data.shape[0]:
-        maj_class, maj_data, maj_labels = ot_class, ot_data, ot_labels
-        min_class, min_data, min_labels = mw_class, mw_data, mw_labels
-    else:
-        maj_class, maj_data, maj_labels = mw_class, mw_data, mw_labels
-        min_class, min_data, min_labels = ot_class, ot_data, ot_labels
-    
-    print(" - Majority class: {} (N = {}) | Minority class: {} (N = {})".format(maj_class, maj_data.shape[0],
-          min_class, min_data.shape[0]))
-    
-    # Upsample minority class
-    if boot_type == "upsample":
-        print("Upsampling minority class...")
-        
-        num_to_boot = maj_data.shape[0] - min_data.shape[0]
-        print(" - Number to upsample: {}".format(num_to_boot))
-        
-        bootstrap_idx = np.random.randint(min_data.shape[0], size=num_to_boot)
-
-        min_data_boot = min_data[bootstrap_idx]
-        min_labels_boot = min_labels[bootstrap_idx]
-        
-        final_data = np.concatenate((data, min_data_boot), axis=0)
-        final_labels = np.concatenate((labels, min_labels_boot), axis=0)
-    elif boot_type == "downsample":
-        print("Downsampling majority class...")
-        # Resample N = number of minority examples
-        num_to_boot = min_data.shape[0]
-        
-        bootstrap_idx = np.random.randint(maj_data.shape[0], size=num_to_boot)
-        
-        maj_data_boot = maj_data[bootstrap_idx]
-        maj_labels_boot = maj_labels[bootstrap_idx]
-        
-        final_data = np.concatenate((maj_data_boot, min_data), axis=0)
-        final_labels = np.concatenate((maj_labels_boot, min_labels), axis=0)
-        
-    print("Final class balance: {} ({}) - {} ({})".format(
-        maj_class, len(np.where(final_labels==maj_class)[0]),
-        min_class, len(np.where(final_labels==min_class)[0])))
-        
-    return final_data, final_labels
+UPSAMPLE = True
+VERBOSE = True
 
 # Load EEG data
 base_dir = os.path.abspath(os.path.join(os.path.join(os.path.dirname(__file__), os.pardir), os.pardir))
@@ -85,10 +24,25 @@ data = data.reshape(-1, 1, 64, 512)
 data_labels = np.load(os.path.join(data_dir, 'all_data_6_2d_full_labels.npy'))
 data_labels = data_labels[:,1]
 
-# Up/downsample the data to balance classes
-data, data_labels = bootstrap(data, data_labels, "downsample")
+# Upsample the under-represented MW class
+if UPSAMPLE:
+    mw_idx = np.where(data_labels==1)
+    mw_data = data[mw_idx]
+    mw_data_labels = data_labels[mw_idx]
+    
+    num_mw = len(mw_idx[0])
+    num_ot = data.shape[0] - num_mw
+    
+    num_to_bootstrap = num_ot - num_mw
+    bootstrap_idx = np.random.randint(mw_data.shape[0], size=num_to_bootstrap)
+    mw_data_boot = mw_data[bootstrap_idx]
+    mw_data_labels_boot = mw_data_labels[bootstrap_idx]
+    
+    data = np.concatenate((data, mw_data_boot), axis=0)
+    data_labels = np.concatenate((data_labels, mw_data_labels_boot), axis=0)
 
 # Create train, validation, test sets
+#rng = np.random.RandomState(225)
 indices = np.random.permutation(data.shape[0])
 
 split_train, split_val, split_test = .6, .2, .2
@@ -113,11 +67,11 @@ def build_cnn(input_var=None):
     # Input layer, as usual:
     l_in = InputLayer(shape=(None, 1, 64, 512), input_var=input_var)
 
-    l_conv1 = Conv2DLayer(incoming = l_in, num_filters = 4, filter_size = 3,
+    l_conv1 = Conv2DLayer(incoming = l_in, num_filters = 128, filter_size = 3,
                         stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
                         nonlinearity = lasagne.nonlinearities.very_leaky_rectify) 
                         
-    l_pool1 = Pool2DLayer(incoming = l_conv1, pool_size = 2, stride = 2)
+    l_pool1 = Pool2DLayer(incoming = l_conv1, pool_size = 4, stride = 4)
 
     # A fully-connected layer
     l_fc = lasagne.layers.DenseLayer(
@@ -149,13 +103,18 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
     if shuffle:
         indices = np.arange(len(inputs))
         np.random.shuffle(indices)
-    for start_idx in tqdm(range(0, len(inputs) - batchsize + 1, batchsize)):
+    for start_idx in range(0, len(inputs) - batchsize + 1, batchsize):
         if shuffle:
             excerpt = indices[start_idx:start_idx + batchsize]
         else:
             excerpt = slice(start_idx, start_idx + batchsize)
         yield inputs[excerpt], targets[excerpt]
 
+
+# ############################## Main program ################################
+# Everything else will be handled in our main program now. We could pull out
+# more functions to better separate the code, but it wouldn't make it any
+# easier to read.
 
 def main(model='cnn', batch_size=500, num_epochs=500):
     # Prepare Theano variables for inputs and targets
@@ -174,10 +133,13 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     train_acc = T.mean(T.eq(T.argmax(prediction, axis=1), target_var),
                       dtype=theano.config.floatX)
 
-    # Create update expressions for training
-    params = lasagne.layers.get_all_params(network, trainable=True)    
-    updates = lasagne.updates.nesterov_momentum(loss, params, learning_rate=0.001)
+    # Create update expressions for training, i.e., how to modify the
+    # parameters at each training step. Here, we'll use Stochastic Gradient
+    # Descent (SGD) with Nesterov momentum, but Lasagne offers plenty more.
+    params = lasagne.layers.get_all_params(network, trainable=True)
+    
     #updates = lasagne.updates.adam(loss, params, learning_rate=0.1)
+    updates = lasagne.updates.nesterov_momentum(loss, params, learning_rate=0.001)
 
     # Create a loss expression for validation/testing. The crucial difference
     # here is that we do a deterministic forward pass through the network,
@@ -186,7 +148,6 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     test_loss = lasagne.objectives.categorical_crossentropy(test_prediction,
                                                             target_var)
     test_loss = test_loss.mean()
-    
     # As a bonus, also create an expression for the classification accuracy:
     test_acc = T.mean(T.eq(T.argmax(test_prediction, axis=1), target_var),
                       dtype=theano.config.floatX)
@@ -201,6 +162,7 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     training_hist = []
     val_hist = []    
     
+    # Finally, launch the training loop.
     print("Starting training...")
     # We iterate over epochs:
     for epoch in range(num_epochs):
@@ -284,4 +246,4 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     # lasagne.layers.set_all_param_values(network, param_values)
 
 # Run the model
-main(batch_size=5, num_epochs=20)
+main(batch_size=5, num_epochs=3)

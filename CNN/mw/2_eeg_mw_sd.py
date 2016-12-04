@@ -7,6 +7,7 @@ import theano
 import theano.tensor as T
 import lasagne
 import matplotlib.pyplot as plt
+import scipy.stats as stats
 
 from tqdm import tqdm
 from lasagne.layers import InputLayer, Conv2DLayer, Pool2DLayer
@@ -84,6 +85,9 @@ data = data.reshape(-1, 1, 64, 512)
 
 data_labels = np.load(os.path.join(data_dir, 'all_data_6_2d_full_labels.npy'))
 data_labels = data_labels[:,1]
+
+# Standardize data per channel
+data = stats.zscore(data, axis=2)  # Significantly improves gradient descent
 
 # Up/downsample the data to balance classes
 data, data_labels = bootstrap(data, data_labels, "downsample")

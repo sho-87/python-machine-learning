@@ -3,19 +3,13 @@
 Classification of EEG data using Lasagne
 
 * **1_eeg_mw_2d.py**
-  * 2D convolutions. Consumes a large amount of memory and very slow
+  * 2D convolutions
 
-* **2_eeg_mw_1d.py**
-  * Changed to 1D convolution for speed and memory
-
-* **3_eeg_mw_sd.py**
+* **2_eeg_mw_sd.py**
   * Data standardized to help training
 
-* **4_eeg_mw_dropout.py**
-  * Dropout added to prevent overfitting
+* **3_eeg_mw_regularize.py**
+  * Dropout and weight decay added to help overfitting
 
-* **5a_eeg_mw_augment_linear.py**
-  * Augment data with linear transformations (scale and translation) to get more training examples
-
-* **5b_eeg_mw_augment_noise.py**
-  * Augment data with noise instead of transformations
+* **4_eeg_mw_electrodes.py**
+  * Down sample # of electrodes to 30, and reorder them spatially so kernels can learn spatial relationships

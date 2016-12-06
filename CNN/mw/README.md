@@ -16,3 +16,6 @@ Classification of EEG data using Lasagne
 
 * **5_eeg_mw_bands.py**
   * Extract frequency bands (alpha, delta, beta etc.) and use them as additional channels
+
+* **6_eeg_mw_augment.py**
+  * Augment training data with scale/translation

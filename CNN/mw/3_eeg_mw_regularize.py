@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 from tqdm import tqdm
 from lasagne.layers import InputLayer, Conv2DLayer, Pool2DLayer
+from lasagne.regularization import regularize_network_params, l2
 
 VERBOSE = False
 
@@ -85,6 +86,10 @@ data = data.reshape(-1, 1, 64, 512)
 data_labels = np.load(os.path.join(data_dir, 'all_data_6_2d_full_labels.npy'))
 data_labels = data_labels[:,1]
 
+# Standardize data per trial
+# Significantly improves gradient descent
+data = (data - data.mean(axis=(2,3),keepdims=1)) / data.std(axis=(2,3),keepdims=1)
+
 # Up/downsample the data to balance classes
 data, data_labels = bootstrap(data, data_labels, "downsample")
 
@@ -113,20 +118,23 @@ def build_cnn(input_var=None):
     # Input layer, as usual:
     l_in = InputLayer(shape=(None, 1, 64, 512), input_var=input_var)
 
-    l_conv1 = Conv2DLayer(incoming = l_in, num_filters = 4, filter_size = 3,
+    l_conv1 = Conv2DLayer(incoming = l_in, num_filters = 4, filter_size = (7,7),
                         stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
-                        nonlinearity = lasagne.nonlinearities.very_leaky_rectify) 
+                        nonlinearity = lasagne.nonlinearities.very_leaky_rectify)
                         
     l_pool1 = Pool2DLayer(incoming = l_conv1, pool_size = 2, stride = 2)
 
-    # A fully-connected layer
+    l_drop1 = lasagne.layers.dropout(l_pool1, p=.5)
+    
     l_fc = lasagne.layers.DenseLayer(
-            l_pool1,
+            l_drop1,
             num_units=512,
             nonlinearity=lasagne.nonlinearities.rectify)
+            
+    l_drop2 = lasagne.layers.dropout(l_fc, p=.5)
 
     l_out = lasagne.layers.DenseLayer(
-            l_fc,
+            l_drop2,
             num_units=2,
             nonlinearity=lasagne.nonlinearities.softmax)
 
@@ -149,6 +157,7 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
     if shuffle:
         indices = np.arange(len(inputs))
         np.random.shuffle(indices)
+    # tqdm() can be removed if no visual progress bar is needed
     for start_idx in tqdm(range(0, len(inputs) - batchsize + 1, batchsize)):
         if shuffle:
             excerpt = indices[start_idx:start_idx + batchsize]
@@ -170,6 +179,8 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     loss = lasagne.objectives.categorical_crossentropy(prediction, target_var)
     loss = loss.mean()
     # We could add some weight decay as well here, see lasagne.regularization.
+    l2_reg = regularize_network_params(network, l2)
+    loss += l2_reg * 0.001
     
     train_acc = T.mean(T.eq(T.argmax(prediction, axis=1), target_var),
                       dtype=theano.config.floatX)
@@ -284,4 +295,4 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     # lasagne.layers.set_all_param_values(network, param_values)
 
 # Run the model
-main(batch_size=5, num_epochs=20)
+main(batch_size=5, num_epochs=10)

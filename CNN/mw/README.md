@@ -5,6 +5,9 @@ Classification of EEG data using Lasagne
 * **1_eeg_mw_2d.py**
   * 2D convolutions
 
+* **1b_eeg_mw_1d.py**
+  * 1D convolutions
+
 * **2_eeg_mw_sd.py**
   * Data standardized to help training
 

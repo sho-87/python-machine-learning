@@ -8,6 +8,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Intellij
+*.iml
+*.iws
+*.ipr
+.idea/
+
 # C extensions
 *.so
 

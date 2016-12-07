@@ -117,7 +117,7 @@ def build_cnn(input_var=None):
     # Input layer, as usual:
     l_in = InputLayer(shape=(None, 1, 64, 512), input_var=input_var)
 
-    l_conv1 = Conv2DLayer(incoming = l_in, num_filters = 4, filter_size = (5,5),
+    l_conv1 = Conv2DLayer(incoming = l_in, num_filters = 8, filter_size = (3,3),
                         stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
                         nonlinearity = lasagne.nonlinearities.very_leaky_rectify) 
                         
@@ -289,4 +289,4 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     # lasagne.layers.set_all_param_values(network, param_values)
 
 # Run the model
-main(batch_size=5, num_epochs=10)
+main(batch_size=100, num_epochs=50)  # 66.56%

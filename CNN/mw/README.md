@@ -9,7 +9,7 @@ Classification of EEG data using Lasagne
   * 1D convolutions
 
 * **2_eeg_mw_sd.py**
-  * Data standardized to help training
+  * Data standardized to help gradient descent
 
 * **3_eeg_mw_regularize.py**
   * Dropout and weight decay added to help overfitting

@@ -128,7 +128,7 @@ def build_cnn(input_var=None):
     
     l_fc = lasagne.layers.DenseLayer(
             l_drop1,
-            num_units=512,
+            num_units=50,
             nonlinearity=lasagne.nonlinearities.rectify)
             
     l_drop2 = lasagne.layers.dropout(l_fc, p=.75)
@@ -295,4 +295,4 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     # lasagne.layers.set_all_param_values(network, param_values)
 
 # Run the model
-main(batch_size=100, num_epochs=300)  #69.22%
+main(batch_size=200, num_epochs=300)  # 68.4%

@@ -80,32 +80,15 @@ def bootstrap(data, labels, boot_type="downsample"):
 base_dir = os.path.abspath(os.path.join(os.path.join(os.path.dirname(__file__), os.pardir), os.pardir))
 data_dir = os.path.join(base_dir, "data")
 
-data = np.load(os.path.join(data_dir, 'all_data_6_2d_full_30ch_bands.npy'))
+data = np.load(os.path.join(data_dir, 'all_data_6_2d_full.npy'))
+data = data.reshape(-1, 1, 64, 512)
 
-data_labels = np.load(os.path.join(data_dir, 'all_data_6_2d_full_30ch_bands_labels.npy'))
+data_labels = np.load(os.path.join(data_dir, 'all_data_6_2d_full_labels.npy'))
 data_labels = data_labels[:,1]
-
-plt.plot(data[0,0,0,:], label="Raw")
-plt.plot(data[0,1,0,:], label="Delta")
-plt.plot(data[0,2,0,:], label="Theta")
-plt.plot(data[0,3,0,:], label="Alpha")
-plt.plot(data[0,4,0,:], label="Beta")
-plt.legend(loc='best')
-plt.xlim(0,512)
-plt.show()
 
 # Standardize data per trial
 # Significantly improves gradient descent
-data = (data - data.mean(axis=(1,2,3),keepdims=1)) / data.std(axis=(1,2,3),keepdims=1)
-
-plt.plot(data[0,0,0,:], label="Raw")
-plt.plot(data[0,1,0,:], label="Delta")
-plt.plot(data[0,2,0,:], label="Theta")
-plt.plot(data[0,3,0,:], label="Alpha")
-plt.plot(data[0,4,0,:], label="Beta")
-plt.legend(loc='best')
-plt.xlim(0,512)
-plt.show()
+data = (data - data.mean(axis=(2,3),keepdims=1)) / data.std(axis=(2,3),keepdims=1)
 
 # Up/downsample the data to balance classes
 data, data_labels = bootstrap(data, data_labels, "downsample")
@@ -146,22 +129,22 @@ train_labels = np.tile(train_labels, len(augmented_data)+1)
 
 def build_cnn(input_var=None):
     # Input layer, as usual:
-    l_in = InputLayer(shape=(None, 5, 30, 512), input_var=input_var)
+    l_in = InputLayer(shape=(None, 1, 64, 512), input_var=input_var)
 
-    l_conv1 = Conv2DLayer(incoming = l_in, num_filters = 16, filter_size = (3,3),
-                        stride = (1,1), pad = 'same', W = lasagne.init.Normal(std = 0.02),
-                        nonlinearity = lasagne.nonlinearities.rectify)
+    l_conv1 = Conv2DLayer(incoming = l_in, num_filters = 8, filter_size = (3,3),
+                        stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
+                        nonlinearity = lasagne.nonlinearities.very_leaky_rectify)
                         
-    l_pool1 = Pool2DLayer(incoming = l_conv1, pool_size = (2,2), stride = (2,2))
+    l_pool1 = Pool2DLayer(incoming = l_conv1, pool_size = 2, stride = 2)
 
-    l_drop1 = lasagne.layers.dropout(l_pool1, p=.5)
+    l_drop1 = lasagne.layers.dropout(l_pool1, p=.75)
     
     l_fc = lasagne.layers.DenseLayer(
             l_drop1,
-            num_units=512,
+            num_units=50,
             nonlinearity=lasagne.nonlinearities.rectify)
             
-    l_drop2 = lasagne.layers.dropout(l_fc, p=.5)
+    l_drop2 = lasagne.layers.dropout(l_fc, p=.75)
 
     l_out = lasagne.layers.DenseLayer(
             l_drop2,
@@ -325,4 +308,4 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     # lasagne.layers.set_all_param_values(network, param_values)
 
 # Run the model
-main(batch_size=5, num_epochs=20)
+main(batch_size=200, num_epochs=300)  # 69.38%

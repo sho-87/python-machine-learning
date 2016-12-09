@@ -9,6 +9,7 @@ import lasagne
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from lasagne.layers import InputLayer, Conv2DLayer, Pool2DLayer
 from lasagne.regularization import regularize_network_params, l2
 
@@ -114,13 +115,15 @@ val_labels = data_labels[val_idx]
 test_data = data[test_idx,:]
 test_labels = data_labels[test_idx]
 
-def build_cnn(input_var=None):
+def build_cnn(k_height, k_width, input_var=None):
     # Input layer, as usual:
     l_in = InputLayer(shape=(None, 1, 64, 512), input_var=input_var)
 
-    l_conv1 = Conv2DLayer(incoming = l_in, num_filters = 8, filter_size = (3,3),
-                        stride = 1, pad = 'same', W = lasagne.init.Normal(std = 0.02),
-                        nonlinearity = lasagne.nonlinearities.very_leaky_rectify)
+    l_conv1 = Conv2DLayer(incoming = l_in, num_filters = 8,
+                          filter_size = (k_height, k_width),
+                          stride = 1, pad = 'same',
+                          W = lasagne.init.Normal(std = 0.02),
+                          nonlinearity = lasagne.nonlinearities.very_leaky_rectify)
                         
     l_pool1 = Pool2DLayer(incoming = l_conv1, pool_size = 2, stride = 2)
 
@@ -166,12 +169,12 @@ def iterate_minibatches(inputs, targets, batchsize, shuffle=False):
         yield inputs[excerpt], targets[excerpt]
 
 
-def main(model='cnn', batch_size=500, num_epochs=500):
+def main(model='cnn', batch_size=500, num_epochs=500, k_height=3, k_width=3):
     # Prepare Theano variables for inputs and targets
     input_var = T.tensor4('inputs')
     target_var = T.ivector('targets')
 
-    network = build_cnn(input_var)
+    network = build_cnn(k_height, k_width, input_var)
 
     # Create a loss expression for training, i.e., a scalar objective we want
     # to minimize (for our multi-class problem, it is the cross-entropy loss):
@@ -187,7 +190,7 @@ def main(model='cnn', batch_size=500, num_epochs=500):
 
     # Create update expressions for training
     params = lasagne.layers.get_all_params(network, trainable=True)    
-    updates = lasagne.updates.nesterov_momentum(loss, params, learning_rate=0.001)
+    updates = lasagne.updates.nesterov_momentum(loss, params, learning_rate=0.01)
     #updates = lasagne.updates.adam(loss, params, learning_rate=0.1)
 
     # Create a loss expression for validation/testing. The crucial difference
@@ -270,16 +273,17 @@ def main(model='cnn', batch_size=500, num_epochs=500):
         test_err += err
         test_acc += acc
         test_batches += 1
+        
+    test_perc = (test_acc / test_batches) * 100
     print("Final results:")
     print("  test loss:\t\t\t{:.6f}".format(test_err / test_batches))
-    print("  test accuracy:\t\t{:.2f} %".format(
-        test_acc / test_batches * 100))
+    print("  test accuracy:\t\t{:.2f} %".format(test_perc))
         
     # Plot learning
     plt.plot(range(1, num_epochs+1), training_hist, label="Training")
     plt.plot(range(1, num_epochs+1), val_hist, label="Validation")
     plt.grid(True)
-    plt.title("Training Curve")
+    plt.title("Training Curve\nKernel size: ({},{}) - Test acc: {:.2f}%".format(k_height, k_width, test_perc))
     plt.xlim(1, num_epochs+1)
     plt.xlabel("Epoch #")
     plt.ylabel("Loss")
@@ -294,5 +298,64 @@ def main(model='cnn', batch_size=500, num_epochs=500):
     #     param_values = [f['arr_%d' % i] for i in range(len(f.files))]
     # lasagne.layers.set_all_param_values(network, param_values)
 
-# Run the model
-main(batch_size=200, num_epochs=300)  # 68.4%
+    return test_perc
+
+# Set filter sizes to search across (odd size only)
+search_heights = range(1, 32, 4)  # Across spatial domain (electrodes)
+search_widths = range(1, 64, 4)  # Across temporal domain (time samples)
+
+# Preallocate accuracy grid
+grid_accuracy = np.empty((len(search_heights), len(search_widths)))
+num_kernels = grid_accuracy.size
+cur_kernel = 0
+
+for i, h in enumerate(search_heights):
+    for j, w in enumerate(search_widths):
+        # Train with current kernel size
+        cur_kernel += 1
+        print("***** Kernel {}/{} | Size: ({},{}) *****".format(cur_kernel, num_kernels, h, w))
+        cur_test_acc = main(batch_size=200, num_epochs=20, k_height=h, k_width=w)
+        grid_accuracy[i, j] = cur_test_acc
+
+# Show accuracy heatmap
+fig, ax = plt.subplots(figsize=(10, 10))
+heatmap = ax.imshow(grid_accuracy, cmap = plt.cm.bone, interpolation = 'mitchell')
+divider = make_axes_locatable(ax)
+cax = divider.append_axes("right", size="5%", pad=0.2)
+cb = plt.colorbar(heatmap, orientation='vertical', cax=cax)
+cb.ax.set_title('Test Acc (%)', {'fontsize': 10, 'horizontalalignment': 'left'})
+ax.grid(True)
+ax.set_xlabel('Kernel Width', weight='bold')
+ax.set_ylabel('Kernel Height', weight='bold')
+ax.xaxis.set_label_position('top')
+ax.xaxis.tick_top()
+ax.set_xticks(range(grid_accuracy.shape[1]))  # X element position
+ax.set_yticks(range(grid_accuracy.shape[0]))  # Y element position
+ax.set_xticklabels(search_widths)  # Labels for X axis
+ax.set_yticklabels(search_heights)  # Labels for Y axis
+plt.show()
+
+# Get highest accuracy and associated kernel size:
+best_idx = np.unravel_index(grid_accuracy.argmax(), grid_accuracy.shape)
+print("Highest accuracy: {:.2f}%".format(np.max(grid_accuracy)))
+print("Best kernel size: ({},{})".format(search_heights[best_idx[0]],
+      search_widths[best_idx[1]]))
+
+# Highest search accuracy: 67.37%
+# Best kernel size: (1,25)
+
+# Train model using ideal kernel size over more epochs
+cur_test_acc = main(batch_size=200, num_epochs=400,
+                    k_height=search_heights[best_idx[0]],
+                    k_width=search_widths[best_idx[1]])
+
+# Final test accuracy: 69.25%
+
+# Early stopping
+early_40_acc = main(batch_size=200, num_epochs=40,
+                    k_height=search_heights[best_idx[0]],
+                    k_width=search_widths[best_idx[1]])  # 67.87%
+                    
+early_100_acc = main(batch_size=200, num_epochs=100,
+                    k_height=search_heights[best_idx[0]],
+                    k_width=search_widths[best_idx[1]])  # 68.00%

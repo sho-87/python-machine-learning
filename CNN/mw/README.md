@@ -28,3 +28,6 @@ Classification of EEG data using Lasagne
 
 * **8_eeg_mw_bands.py**
   * Extract frequency bands (alpha, delta, beta etc.) and use them as additional channels
+
+* **9_eeg_mw_xcorr.py**
+  * Calculate cross-correlation matrix across all electrodes (and frequency bands) and use xcorr as the input into CNN

@@ -23,5 +23,5 @@ Classification of EEG data using Lasagne
 * **6_eeg_mw_electrodes.py**
   * Down sample # of electrodes to 30, and reorder them spatially so kernels can learn spatial relationships
 
-* **9_eeg_mw_bands.py**
+* **8_eeg_mw_bands.py**
   * Extract frequency bands (alpha, delta, beta etc.) and use them as additional channels

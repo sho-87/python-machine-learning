@@ -88,6 +88,28 @@ data = np.load(os.path.join(data_dir, 'all_data_6_2d_full_30ch_bands.npy'))
 data_labels = np.load(os.path.join(data_dir, 'all_data_6_2d_full_30ch_bands_labels.npy'))
 data_labels = data_labels[:,1]
 
+## EEG frequency bands were created directly from MATLAB data using:
+#from scipy import signal
+#
+#FREQ_BANDS = ((0.1, 3), (4, 7), (8, 13), (16, 31)) # Delta, theta, alpha, beta
+#SAMPLE_RATE = 256
+#
+#all_data = np.reshape(all_data, (-1, 1, 30, 512))
+#
+#filtered_data = [all_data]
+#
+#for band in FREQ_BANDS:
+#    lower = float(band[0])/(SAMPLE_RATE/2)  # Proportion of Nyquist frequency
+#    upper = float(band[1])/(SAMPLE_RATE/2)  # Proportion of Nyquist frequency
+#    b, a = signal.butter(1, [lower, upper], 'bandpass')
+#    
+#    output_signal = signal.filtfilt(b, a, all_data, axis=3)
+#    
+#    filtered_data.append(output_signal)
+#    
+#all_data = np.concatenate(filtered_data, axis=1)
+
+
 # Electrode Order (30 channels)
 electrode_order_30 = ('Fp1','Fp2','Fz',
                  'F4','F8','FC6',

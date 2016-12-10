@@ -1,6 +1,7 @@
 # Data
 /data/cifar*
 /data/all_data*.npy
+/data/eeg_xcorr*.npy
 /CNN/*.gz
 
 # Byte-compiled / optimized / DLL files

@@ -6,7 +6,7 @@ Classification of EEG data using Lasagne
   * 2D convolutions
 
 * **1b_eeg_mw_1d.py**
-  * 1D convolutions
+  * 1D convolutions with 64 depth channels
 
 * **2_eeg_mw_sd.py**
   * Data standardized to help gradient descent
@@ -31,3 +31,12 @@ Classification of EEG data using Lasagne
 
 * **9_eeg_mw_xcorr.py**
   * Calculate cross-correlation matrix across all electrodes (and frequency bands) and use xcorr as the input into CNN
+
+* **10_eeg_mw_realtime.py**
+  * Each time point treated as a separate 1D training example across 30 channels (1D convolutions)
+
+* **11_eeg_mw_realtime_subject.py**
+  * How generalizable is this model? Is it subject invariant? Remove 1 subject from training and use that as test data to see if model can predict an unseen subject
+
+* **12_eeg_mw_realtime_interpret.py**
+  * Plot the learned 1D kernels and their activation/feature maps for both a OT and MW trial
